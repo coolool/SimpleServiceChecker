@@ -5,9 +5,10 @@
 - [x] Confirm spreadsheet-only coverage ownership.
 - [x] Confirm fibre address lookup without a fibre map overlay.
 - [x] Confirm the low-maintenance exclusion list.
-- [ ] Confirm repository visibility and create the GitHub repository.
-- [ ] Approve the product specification and first-release acceptance tests.
-- [ ] Confirm the supported Windows versions and installer audience.
+- [x] Create the private `coolool/SimpleServiceChecker` GitHub repository and connect local `main`.
+- [x] Draft the product specification and first-release acceptance tests.
+- [ ] Owner approves `FIRST_RELEASE_SPEC.md`.
+- [ ] Owner confirms the proposed Windows 10/11 x64 installer audience.
 
 ## Phase 1 - Technical proof
 

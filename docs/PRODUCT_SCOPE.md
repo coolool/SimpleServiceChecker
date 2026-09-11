@@ -10,7 +10,7 @@ Give a salesperson a fast, understandable view of likely fibre and fixed-wireles
 2. Show the fibre address-range result and maximum listed speed.
 3. Show fixed-wireless towers whose published range includes the location.
 4. Draw the location, tower ranges, and candidate paths on Google Maps.
-5. Show the familiar terrain, line-clearance, and Fresnel-style profile for a selected wireless candidate.
+5. Show the familiar terrain and line-clearance profile for a selected wireless candidate.
 
 ## Coverage source
 

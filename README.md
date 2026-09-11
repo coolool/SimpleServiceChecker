@@ -14,7 +14,7 @@ Planning and repository setup only. Application development has not started.
 - Fibre is shown as an address availability result; a fibre map overlay is intentionally excluded.
 - Wireless results are planning candidates, not a guarantee that service can be installed.
 
-See [Product scope](docs/PRODUCT_SCOPE.md) and [Roadmap](docs/ROADMAP.md).
+See [Product scope](docs/PRODUCT_SCOPE.md), [first-release specification](docs/FIRST_RELEASE_SPEC.md), and [roadmap](docs/ROADMAP.md).
 
 ## Repository safety
 
