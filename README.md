@@ -16,7 +16,7 @@ Planning and repository setup only. Application development has not started.
 - Users may optionally import official ISED spectrum files as a separate reference layer; ISED records never indicate company coverage.
 - Wireless results are planning candidates, not a guarantee that service can be installed.
 
-See [Product scope](docs/PRODUCT_SCOPE.md), [first-release specification](docs/FIRST_RELEASE_SPEC.md), and [roadmap](docs/ROADMAP.md).
+See [Product scope](docs/PRODUCT_SCOPE.md), [first-release specification](docs/FIRST_RELEASE_SPEC.md), [build plan](docs/BUILD_PLAN.md), and [roadmap](docs/ROADMAP.md).
 
 ## Repository safety
 

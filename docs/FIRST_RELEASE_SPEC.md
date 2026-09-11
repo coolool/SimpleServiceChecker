@@ -1,6 +1,6 @@
 # First-release specification
 
-Status: Draft for owner approval. Implementation has not started.
+Status: Approved on September 11, 2026. Implementation has not started.
 
 ## 1. Outcome
 
@@ -225,7 +225,7 @@ On a representative supported business laptop:
 - open the main window within five seconds after first installation setup;
 - load the supplied workbook within two seconds;
 - show local fibre and tower-range results within one second of receiving coordinates;
-- remain responsive while elevation plots load; and
+- remain responsive while elevation plots load;
 - support at least 5,000 tower rows and 25,000 fibre rows without a database; and
 - keep the map responsive while optional ISED records are loaded only for the visible viewport.
 
@@ -267,7 +267,7 @@ GitHub Actions produces a normal signed Windows installer. A salesperson does no
 
 Manual releases mean the installed application does not silently update itself. A `Check for updates` command opens the fixed latest-release page, and the user downloads and runs a newer installer when one is available. The existing installation continues to work until then.
 
-Because the source repository is private, its GitHub Releases page is convenient only for recipients who have been granted repository access. General distribution should use a company-controlled SharePoint/OneDrive download link, company website, or a separate public downloads-only repository while keeping source code private. The final channel is an owner decision.
+Because the source repository is private, its GitHub Releases page is convenient only for recipients who have been granted repository access. General distribution uses a company-controlled SharePoint or OneDrive download link while keeping source code private.
 
 Code signing is required before general distribution. Without it, Windows can show an `Unknown publisher` warning even when the installer is legitimate.
 
@@ -280,18 +280,12 @@ Code signing is required before general distribution. Without it, Windows can sh
 - Version tags create draft release artifacts for manual review.
 - General distribution waits for code signing and clean-machine acceptance.
 
-## 19. Decisions required before Phase 1
-
-Confirmed decisions:
+## 19. Approved decisions
 
 1. Windows 10/11 x64 is the version 1 support target.
 2. The application package is self-contained.
-3. Wireless plots include Fresnel-zone clearance.
-4. Optional ISED data is manually imported and remains separate from coverage.
-
-Owner approval is still required for:
-
-1. .NET 10 WPF and WebView2 as the technical direction.
-2. The installer download location for non-developer recipients.
-3. The workbook validation and availability wording in this specification.
-4. Starting the technical proof described in Roadmap Phase 1.
+3. .NET 10 WPF and WebView2 are the technical direction.
+4. Wireless plots include Fresnel-zone clearance.
+5. Optional ISED data is manually imported and remains separate from coverage.
+6. Workbook validation and availability wording follow this specification.
+7. Signed installers are distributed through a company-controlled SharePoint or OneDrive link.

@@ -11,9 +11,10 @@
 - [x] Confirm a self-contained application package.
 - [x] Add Fresnel-zone plotting to the wireless scope.
 - [x] Add optional manual ISED-file import as a separate reference layer.
-- [ ] Owner approves `FIRST_RELEASE_SPEC.md`.
-- [ ] Owner accepts the proposed WPF/.NET and WebView2 technical direction after comparison with Electron.
-- [ ] Owner selects the installer download location for non-developer recipients.
+- [x] Owner approves `FIRST_RELEASE_SPEC.md`.
+- [x] Owner accepts WPF/.NET and WebView2 as the technical direction.
+- [x] Owner selects a company-controlled SharePoint or OneDrive installer link.
+- [ ] Owner accepts `BUILD_PLAN.md` and explicitly starts Phase 1 implementation.
 
 ## Phase 1 - Technical proof
 
