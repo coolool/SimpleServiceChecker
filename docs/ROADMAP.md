@@ -10,7 +10,7 @@
 - [x] Confirm Windows 10/11 x64 as the initial installer audience.
 - [x] Confirm a self-contained application package.
 - [x] Add Fresnel-zone plotting to the wireless scope.
-- [x] Add optional manual ISED-file import as a separate reference layer.
+- [x] Defer external spectrum and regulatory-data imports or map layers beyond version 1.
 - [x] Owner approves `FIRST_RELEASE_SPEC.md`.
 - [x] Owner accepts WPF/.NET and WebView2 as the technical direction.
 - [x] Owner selects a company-controlled SharePoint or OneDrive installer link.
@@ -42,17 +42,7 @@ No production installer work should begin until this proof is accepted.
 - [ ] Keep the current data active when a replacement is invalid or interrupted.
 - [ ] Add a visible data filename, activation time, record count, and warning summary.
 
-## Phase 4 - Optional ISED reference layer
-
-- [ ] Link to the official ISED download page without downloading files automatically.
-- [ ] Import supported All Services and Terrestrial Spectrum Licence site-data ZIP files.
-- [ ] Validate schemas and retain the last known-good versioned file cache on failed import.
-- [ ] Stream large imports into ordinary local files without loading the complete dataset into memory.
-- [ ] Display clustered or viewport-bounded ISED records in a distinct reference layer.
-- [ ] Show source type and data date, and state that ISED records do not indicate company coverage.
-- [ ] Allow the user to hide, replace, or remove imported ISED data.
-
-## Phase 5 - Installer and release
+## Phase 4 - Installer and release
 
 - [ ] Produce a per-user Windows installer with no administrator requirement where possible.
 - [ ] Detect or bootstrap the required embedded browser runtime.
@@ -68,5 +58,4 @@ No production installer work should begin until this proof is accepted.
 - Address results appear quickly and distinguish fibre from wireless candidates.
 - The map, paths, legend, and plots remain visually familiar to Service Checker users.
 - Invalid replacement data cannot displace the last known-good workbook.
-- Optional ISED data remains a manual file import and cannot affect company availability results.
-- The application performs no database, backend, login, logging, telemetry, ticketing, automatic ISED synchronization, or fibre-overlay work.
+- The application performs no database, backend, login, logging, telemetry, ticketing, external regulatory-data import or overlay, or fibre-overlay work.

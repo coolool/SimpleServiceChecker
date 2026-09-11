@@ -13,7 +13,6 @@ Planning and repository setup only. Application development has not started.
 - Each company supplies and manages its own Google Maps Platform key.
 - Fibre is shown as an address availability result; a fibre map overlay is intentionally excluded.
 - Wireless plots include terrain, line clearance, and first Fresnel-zone clearance.
-- Users may optionally import official ISED spectrum files as a separate reference layer; ISED records never indicate company coverage.
 - Wireless results are planning candidates, not a guarantee that service can be installed.
 
 See [Product scope](docs/PRODUCT_SCOPE.md), [first-release specification](docs/FIRST_RELEASE_SPEC.md), [build plan](docs/BUILD_PLAN.md), and [roadmap](docs/ROADMAP.md).

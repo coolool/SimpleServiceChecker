@@ -10,6 +10,6 @@
 - Keep Google integration isolated behind a provider adapter and require each company to configure its own restricted key.
 - Fibre address availability is in scope. Fibre map geometry and overlays are out of scope.
 - Include a first Fresnel-zone envelope in wireless plots, defaulting to 5.8 GHz, 60% clearance, and effective-earth-radius factor 4/3; label the assumptions and keep them adjustable.
-- Keep optional, user-imported ISED records in a separate reference layer. Do not use them to infer company coverage, and do not add an automatic downloader, database, scheduler, or backend for them.
+- Keep external spectrum and regulatory-data imports or map layers out of the first release.
 - Follow the package order and blocking gates in `docs/BUILD_PLAN.md`; do not continue past a failed gate without owner approval of a revised approach.
 - Keep changes small, tested, and documented in `docs/ROADMAP.md`.

@@ -17,7 +17,6 @@ The application must preserve the recognizable Service Checker map, warm sidebar
 - Coverage comes only from a validated workbook containing `Tower Coverage` and `Fibre Coverage`.
 - Google Maps, Places, and Elevation use a company-owned restricted key encrypted for the current Windows user.
 - Wireless plots include first Fresnel-zone clearance with defaults of 5.8 GHz, 60%, and effective-earth-radius factor 4/3.
-- ISED data is optional, manually downloaded, and imported into disposable local files. It never affects availability results.
 - A signed per-user installer is distributed through a company-controlled SharePoint or OneDrive link.
 - Updates are manual. `Check for Updates` opens the fixed company download location.
 
@@ -68,7 +67,7 @@ installer/
 docs/
 ```
 
-`SimpleServiceChecker.Core` owns immutable domain models, workbook validation, fibre matching, distance and sector calculations, terrain and Fresnel calculations, and ISED normalization. It has no WPF or WebView2 dependency.
+`SimpleServiceChecker.Core` owns immutable domain models, workbook validation, fibre matching, distance and sector calculations, and terrain and Fresnel calculations. It has no WPF or WebView2 dependency.
 
 `SimpleServiceChecker.App` owns the WPF shell, native file dialogs, encrypted configuration, local-file activation, Google adapters, elevation requests, WebView2 bridge, and bundled web interface.
 
@@ -78,8 +77,8 @@ The web interface renders data supplied by the native application. Coverage, mat
 
 Expose a small, versioned message contract:
 
-- web to native: app ready, select location, choose workbook, activate workbook, restore workbook, save Google setup, request terrain plot, import or remove ISED data, and open download pages;
-- native to web: setup state, active-data summary, location result, candidate list, terrain datasets, ISED viewport records, progress, warnings, and errors.
+- web to native: app ready, select location, choose workbook, activate workbook, restore workbook, save Google setup, and request terrain plot;
+- native to web: setup state, active-data summary, location result, candidate list, terrain datasets, progress, warnings, and errors.
 
 Validate every incoming message. Do not expose arbitrary filesystem, shell, or process execution to JavaScript. Disable WebView2 developer tools in release builds and restrict navigation to the local application origin plus explicit external links opened in the system browser.
 
@@ -96,10 +95,6 @@ coverage/
   current-manifest.json
   previous.xlsx
   previous-manifest.json
-ised/
-  active.json
-  versions/<import-id>/manifest.json
-  versions/<import-id>/tiles/*.json.gz
 temp/
 ```
 
@@ -223,38 +218,7 @@ The application reads the selected source only during validation or an explicit 
 
 Gate: invalid or interrupted replacement attempts cannot displace the active workbook, and restoration works after an application restart.
 
-### Package 6: Optional ISED reference layer
-
-Build:
-
-- Open Official ISED Download Page and Import ISED Files;
-- support the approved All Services and Terrestrial Spectrum Licence site-data ZIPs;
-- validate archive names, members, field counts, headers where supplied, coordinates, and source dates;
-- default the first release to Ontario while retaining a province-aware format that can extend across Canada;
-- stream input records into bounded geographic temporary partitions;
-- group records sharing a physical coordinate within one partition;
-- generate compressed JSON tile files and a versioned manifest;
-- atomically activate the new tile set only after every partition succeeds;
-- load and cluster only tiles intersecting the visible map viewport;
-- provide distinct blue ISED markers, source details, layer toggle, replacement, and removal; and
-- state throughout the UI that ISED records are regulatory references, not coverage or necessarily unique physical towers.
-
-No automatic download, scheduled update, background service, SQLite file, or other database is permitted.
-
-Test:
-
-- both supported archive formats;
-- missing, renamed, truncated, malformed, duplicate, and future-schema inputs;
-- coordinates on tile boundaries;
-- multiple records at one coordinate;
-- cancellation and disk-full simulation;
-- failed import retaining the previous active version;
-- viewport loading and marker clustering; and
-- proof that adding or removing ISED data cannot change fibre or wireless results.
-
-Gate: a large representative import completes with bounded memory and the sales workflow stays responsive with the layer enabled.
-
-### Package 7: Installer, signing, and release automation
+### Package 6: Installer, signing, and release automation
 
 Build:
 
@@ -273,7 +237,7 @@ The normal online installer uses the small WebView2 bootstrapper. Keep an offlin
 
 Gate: install, launch, upgrade, rollback, and uninstall succeed on clean Windows 10 and 11 x64 systems without Excel, .NET, Git, or developer tools installed.
 
-### Package 8: Release candidate and acceptance
+### Package 7: Release candidate and acceptance
 
 Run the complete acceptance matrix using synthetic data plus the supplied workbook outside Git:
 
@@ -284,7 +248,6 @@ Run the complete acceptance matrix using synthetic data plus the supplied workbo
 - zero, one, and many wireless candidates;
 - terrain and Fresnel plots at representative path lengths;
 - Google key restriction, quota, timeout, and offline cases;
-- no ISED data, valid import, failed replacement, enabled layer, and removed layer;
 - 1366 by 768, 1920 by 1080, and Windows display scaling;
 - keyboard workflow and visible focus;
 - clean install, upgrade, uninstall, and remaining local-data disclosure; and
@@ -328,9 +291,7 @@ Version tags create draft GitHub releases. General-release publication requires 
 | Replacement workbook is malformed | Complete validation, temporary copy, hash, manifest, and atomic activation | Packages 2 and 5 |
 | Fibre address wording produces false assurance | Structured address matching and explicit `Not listed` wording | Packages 2 and 3 |
 | Radius or terrain is mistaken for guaranteed coverage | Candidate language and visible planning disclaimer | Packages 3 and 4 |
-| ISED extracts overwhelm memory or the map | Streaming partitions, compressed tiles, viewport loading, and clustering | Package 6 |
-| ISED is mistaken for company service | Separate colour, legend, controls, and no connection to availability logic | Package 6 |
-| Unsigned installer creates user distrust | Sign binaries and verify on clean machines before distribution | Package 7 |
+| Unsigned installer creates user distrust | Sign binaries and verify on clean machines before distribution | Package 6 |
 | Real data or keys enter Git | Synthetic fixtures, ignore rules, CI scans, and release checklist | Every package |
 
 ## 9. Completion definition
@@ -343,7 +304,7 @@ Version 1 is complete only when:
 - the installer is signed and tested on clean Windows 10 and 11 x64 systems;
 - the installer is available through the agreed company link;
 - a non-developer can install, configure, check a location, replace the workbook, and uninstall using the supplied instructions; and
-- the repository and installed application contain no database, backend, real coverage workbook, shared Google key, customer data, logs, telemetry, fibre overlay, or automatic ISED synchronization.
+- the repository and installed application contain no database, backend, real coverage workbook, shared Google key, customer data, logs, telemetry, fibre overlay, or external regulatory-data layer.
 
 ## 10. Start condition
 
@@ -355,4 +316,3 @@ No application code has been created. Implementation begins only after the owner
 - [WebView2 local content and virtual host mapping](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/working-with-local-content)
 - [WebView2 Runtime distribution](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution)
 - [Google Maps Platform API security guidance](https://developers.google.com/maps/api-security-best-practices)
-- [ISED Spectrum Management System data downloads](https://ised-isde.canada.ca/site/spectrum-management-system/en/spectrum-management-system-data/download-sms-data)
