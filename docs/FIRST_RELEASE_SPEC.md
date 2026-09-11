@@ -9,13 +9,15 @@ SimpleServiceChecker lets a salesperson enter a customer location and quickly se
 - whether the workbook lists fibre at that civic address;
 - which fixed-wireless towers include the location within their published range;
 - the listed maximum speeds and distance for each candidate; and
-- a familiar terrain and line-clearance plot for a selected wireless candidate.
+- a familiar terrain, line-clearance, and first Fresnel-zone plot for a selected wireless candidate.
+
+The user may also import supported official ISED spectrum files for an optional map reference layer. ISED records are not company coverage and never affect an availability result.
 
 The application is a planning aid. It does not guarantee installation feasibility or service availability.
 
 ## 2. Release boundaries
 
-Version 1 is a Windows desktop application. It has no database, hosted backend, authentication, telemetry, pin logging, customer records, ticketing, ISED data, fibre overlay, or automatic cloud synchronization.
+Version 1 is a Windows desktop application. It has no database, hosted backend, authentication, telemetry, pin logging, customer records, ticketing, fibre overlay, automatic ISED downloader, or automatic cloud synchronization.
 
 Coverage comes only from a locally selected Excel workbook. The application never edits the selected source workbook.
 
@@ -27,7 +29,7 @@ Coverage comes only from a locally selected Excel workbook. The application neve
 - A maintained .NET Excel library for read-only `.xlsx` parsing; Excel is not required.
 - Plain HTML, CSS, and JavaScript modules in the embedded view. Avoid a large front-end framework unless the proof demonstrates a concrete need.
 - Chart.js packaged with the application for terrain profiles; no runtime CDN dependency.
-- A simple per-user Windows installer. Version 1 uses manual GitHub release downloads rather than an automatic updater.
+- A simple per-user Windows installer. Version 1 uses a signed installer downloaded manually rather than an automatic updater.
 
 The Google proof must validate an HTTPS virtual-host origin in WebView2 before this architecture is accepted. If Google does not consistently receive an authorizable referrer, stop and revise the hosting approach rather than requiring an unrestricted key.
 
@@ -40,7 +42,8 @@ Preserve the familiar Service Checker visual character:
 - address and coordinate search at the top;
 - fibre summary before wireless candidates;
 - tower result cards with distance, height, range, maximum speeds, and plot;
-- coloured line-clearance paths and the existing clearance legend; and
+- coloured line-clearance paths and the existing clearance legend;
+- an optional, visually distinct ISED reference-layer toggle when data has been imported; and
 - responsive behaviour for smaller laptop screens.
 
 Remove ticket, customer, heatmap, BMS, logging, and administrative controls.
@@ -87,7 +90,20 @@ Candidate cards are ordered by distance. Each card shows:
 
 Coverage circles and candidate lines appear on the map. The application treats blank `AP Direction` with 360-degree `AP Coverage` as omnidirectional. If a future row has coverage below 360 degrees, direction becomes required and the application may apply sector filtering only after that behaviour has dedicated acceptance tests.
 
-Terrain and line-clearance calculations should reproduce the existing Service Checker inputs, colours, labels, and chart appearance. Version 1 does not add the TXfinder Fresnel, antenna, ISED, or arbitrary two-endpoint planning workflow.
+Terrain and line-clearance calculations should reproduce the existing Service Checker inputs, colours, labels, and chart appearance. Add the complete first Fresnel-zone envelope and a clearance reference with these defaults:
+
+- frequency: 5.8 GHz;
+- Fresnel clearance reference: 60%; and
+- effective-earth-radius factor: 4/3.
+
+Frequency and clearance percentage are adjustable for the selected plot. The earth model is visible and adjustable between standard 4/3, geometric earth, and flat-earth comparison. The profile must label all assumptions and remain a planning aid; it does not add a link budget, diffraction model, antenna pattern, or installation guarantee.
+
+For a path of total length `D`, point distances `d1` and `d2`, wavelength `lambda`, and effective Earth radius `R`, use:
+
+- first Fresnel radius: `sqrt(lambda * d1 * d2 / D)`; and
+- curvature bulge: `d1 * d2 / (2 * R)`.
+
+Reuse the tested TXfinder calculation behaviour where practical, with independent unit tests in this repository.
 
 ## 8. Workbook contract
 
@@ -179,8 +195,30 @@ Do not create a database. Do not store searched addresses, coordinates, map hist
 - Elevation unavailable: show candidate towers without presenting a clearance result.
 - No workbook: open the Data setup screen and disable availability claims.
 - No Google key: allow workbook validation but disable Google-dependent location and plot functions.
+- No ISED import: omit or disable the ISED layer without affecting normal service checks.
+- Invalid or interrupted ISED import: keep the previous validated ISED cache active and show a clear import error.
 
-## 13. Performance targets
+## 13. Optional ISED reference layer
+
+ISED support is an optional file-import feature and is not a coverage source.
+
+The Data screen provides an `ISED Reference Data` section with:
+
+- `Open official ISED download page`;
+- `Import ISED Files`;
+- current source names, data dates, record counts, and validation warnings;
+- `Replace ISED Data`; and
+- `Remove ISED Data`.
+
+The first supported inputs are the official All Services radio-authorization extract (`TAFL_LTAF.zip`) and Terrestrial Spectrum Licence site-data extract (`Site_Data_Extract_FX.zip`). The importer validates the expected archive contents and schemas before replacing active data.
+
+Because these source files can contain very large numbers of regulatory records, import processing must stream records and produce disposable, versioned local cache files with a small manifest. The application must not create SQLite, another database, or a continuously running index service. Map display must use clustering or viewport-bounded loading so the full dataset is never rendered at once.
+
+ISED markers use a distinct colour and legend. Marker details identify the source and available authorization fields. Every ISED screen states that the records are regulatory references, may be duplicated at one physical coordinate, and do not indicate company service availability.
+
+The application does not automatically download, refresh, or schedule ISED updates. The user controls when files are downloaded from ISED and imported. Removing ISED data deletes only the derived local cache and does not touch the user's downloaded ZIP files.
+
+## 14. Performance targets
 
 On a representative supported business laptop:
 
@@ -188,11 +226,12 @@ On a representative supported business laptop:
 - load the supplied workbook within two seconds;
 - show local fibre and tower-range results within one second of receiving coordinates;
 - remain responsive while elevation plots load; and
-- support at least 5,000 tower rows and 25,000 fibre rows without a database.
+- support at least 5,000 tower rows and 25,000 fibre rows without a database; and
+- keep the map responsive while optional ISED records are loaded only for the visible viewport.
 
 These are acceptance targets, not claims until measured.
 
-## 14. Accessibility and usability
+## 15. Accessibility and usability
 
 - Complete the primary workflow with keyboard and mouse.
 - Provide visible focus and labelled controls.
@@ -200,9 +239,9 @@ These are acceptance targets, not claims until measured.
 - Keep primary result wording understandable without engineering knowledge.
 - Put setup and data-management controls behind a simple settings button so the normal sales screen remains uncluttered.
 
-## 15. Verification
+## 16. Verification
 
-Automated tests cover workbook parsing, header normalization, validation, fibre matching, open-ended civic ranges, distance calculations, candidate sorting, persisted-setting boundaries, and JavaScript plot calculations.
+Automated tests cover workbook parsing, header normalization, validation, fibre matching, open-ended civic ranges, distance calculations, candidate sorting, persisted-setting boundaries, Fresnel and earth-curvature calculations, and JavaScript plot calculations.
 
 Manual acceptance covers:
 
@@ -214,12 +253,25 @@ Manual acceptance covers:
 - address, coordinate, click, and drag workflows;
 - representative fibre matches and non-matches;
 - multiple, single, and zero wireless candidates;
+- Fresnel plots at known distances and frequencies, including default 60% clearance;
+- valid, malformed, interrupted, and large ISED imports, plus cache replacement and removal;
+- confirmation that ISED markers never change fibre or wireless availability results;
 - Google timeout, offline, and quota/provider errors;
 - map, line, legend, and terrain-chart visual comparison with Service Checker;
 - upgrade, rollback, and uninstall; and
 - confirmation that no workbook, key, searched address, or generated installer entered Git history.
 
-## 16. GitHub and releases
+## 17. Distribution and updates
+
+GitHub Actions produces a normal signed Windows installer. A salesperson does not need Git, GitHub Desktop, .NET, Node.js, Excel, or any developer tools: they download the installer, run it, and follow a standard setup wizard.
+
+Manual releases mean the installed application does not silently update itself. A `Check for updates` command opens the fixed latest-release page, and the user downloads and runs a newer installer when one is available. The existing installation continues to work until then.
+
+Because the source repository is private, its GitHub Releases page is convenient only for recipients who have been granted repository access. General distribution should use a company-controlled SharePoint/OneDrive download link, company website, or a separate public downloads-only repository while keeping source code private. The final channel is an owner decision.
+
+Code signing is required before general distribution. Without it, Windows can show an `Unknown publisher` warning even when the installer is legitimate.
+
+## 18. GitHub and releases
 
 - `main` remains releasable and protected through reviewed pull requests once implementation starts.
 - Every code-changing pull request updates `docs/ROADMAP.md` and its acceptance evidence.
@@ -228,12 +280,18 @@ Manual acceptance covers:
 - Version tags create draft release artifacts for manual review.
 - General distribution waits for code signing and clean-machine acceptance.
 
-## 17. Decisions required before Phase 1
+## 19. Decisions required before Phase 1
 
-Owner approval is required for:
+Confirmed decisions:
 
-1. Windows 10/11 x64 as the version 1 support target.
-2. .NET 10 WPF and WebView2 as the technical direction.
-3. Manual GitHub release downloads instead of automatic application updates.
-4. The workbook validation and availability wording in this specification.
-5. Starting the technical proof described in Roadmap Phase 1.
+1. Windows 10/11 x64 is the version 1 support target.
+2. The application package is self-contained.
+3. Wireless plots include Fresnel-zone clearance.
+4. Optional ISED data is manually imported and remains separate from coverage.
+
+Owner approval is still required for:
+
+1. .NET 10 WPF and WebView2 as the technical direction.
+2. The installer download location for non-developer recipients.
+3. The workbook validation and availability wording in this specification.
+4. Starting the technical proof described in Roadmap Phase 1.

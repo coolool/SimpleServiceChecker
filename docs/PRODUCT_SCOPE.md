@@ -10,7 +10,8 @@ Give a salesperson a fast, understandable view of likely fibre and fixed-wireles
 2. Show the fibre address-range result and maximum listed speed.
 3. Show fixed-wireless towers whose published range includes the location.
 4. Draw the location, tower ranges, and candidate paths on Google Maps.
-5. Show the familiar terrain and line-clearance profile for a selected wireless candidate.
+5. Show the familiar terrain, line-clearance, and first Fresnel-zone profile for a selected wireless candidate.
+6. Optionally show user-imported official ISED spectrum records as a clearly separate reference layer.
 
 ## Coverage source
 
@@ -38,6 +39,12 @@ Each company creates and manages its own Google Maps Platform account, key, enab
 
 Google-connected features require internet access. Coverage data remains local, but searched locations and elevation paths are sent to Google services as required by the enabled map features.
 
+## Optional ISED reference data
+
+The user may open the official ISED download page, download supported spectrum-data ZIP files, and import them manually. The application validates and converts accepted records into ordinary versioned local cache files for responsive viewport display. It does not create a database, automatically download updates, or run a background synchronization service.
+
+ISED records are regulatory reference data, not company tower inventory or proof of service availability. They use a visually distinct layer, can be hidden or removed, and never participate in fibre or wireless availability results.
+
 ## Explicitly excluded
 
 - Fibre map overlay or route geometry
@@ -45,7 +52,7 @@ Google-connected features require internet access. Coverage data remains local, 
 - Hosted backend or web server
 - User accounts and authentication
 - BMS integration
-- ISED data
+- Automatic ISED downloading or synchronization
 - Customer-record imports
 - Sonar ticket creation
 - Heatmaps
