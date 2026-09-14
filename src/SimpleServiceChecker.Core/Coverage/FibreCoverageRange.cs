@@ -11,9 +11,11 @@ public sealed record FibreCoverageRange(
     string MaxSpeeds,
     string? Notes)
 {
-    public bool Contains(int civicNumber) =>
-        civicNumber >= StartCivicNumber &&
+    public bool Contains(int civicNumber)
+    {
+        return civicNumber >= StartCivicNumber &&
         (EndCivicNumber is null || civicNumber <= EndCivicNumber.Value);
+    }
 
     public long RangeWidth => EndCivicNumber is null
         ? long.MaxValue

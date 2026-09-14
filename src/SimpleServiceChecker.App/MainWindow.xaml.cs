@@ -6,6 +6,7 @@ using Microsoft.Win32;
 using SimpleServiceChecker.App.Bridge;
 using SimpleServiceChecker.App.Infrastructure;
 using SimpleServiceChecker.App.Security;
+using SimpleServiceChecker.Core.Coverage;
 using SimpleServiceChecker.Core.Workbooks;
 
 namespace SimpleServiceChecker.App;
@@ -13,6 +14,13 @@ namespace SimpleServiceChecker.App;
 public partial class MainWindow : Window
 {
     private readonly GoogleKeyStore googleKeyStore = new(AppPaths.GoogleKeyFile);
+    private readonly WorkbookActivationService workbookActivationService = new(
+        AppPaths.CurrentWorkbookFile,
+        AppPaths.CurrentManifestFile,
+        AppPaths.TemporaryDirectory);
+    private CoverageDataset? activeDataset;
+    private CoverageWorkbookManifest? activeManifest;
+    private CancellationTokenSource? locationSelectionCancellation;
 
     public MainWindow()
     {
@@ -40,7 +48,7 @@ public partial class MainWindow : Window
         catch (Exception exception)
         {
             LoadingOverlay.Visibility = Visibility.Collapsed;
-            MessageBox.Show(
+            _ = MessageBox.Show(
                 this,
                 $"The application could not start its embedded browser.\n\n{exception.Message}",
                 "Simple Service Checker",
@@ -90,7 +98,20 @@ public partial class MainWindow : Window
                 case BridgeMessageTypes.ChooseWorkbook:
                     await HandleChooseWorkbookAsync(message.RequestId);
                     break;
+                case BridgeMessageTypes.SelectLocation:
+                    await HandleSelectLocationAsync(message);
+                    break;
+                case BridgeMessageTypes.ClearLocation:
+                    CancelLocationSelection();
+                    await SendAsync("locationCleared", message.RequestId, new { });
+                    break;
+                default:
+                    break;
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer customer location superseded this request.
         }
         catch (Exception exception)
         {
@@ -101,12 +122,29 @@ public partial class MainWindow : Window
     private async Task HandleAppReadyAsync(string requestId)
     {
         var apiKey = googleKeyStore.TryLoad();
+        var current = await workbookActivationService.LoadCurrentAsync();
+        activeDataset = current?.LoadResult.IsValid == true ? current.LoadResult.Dataset : null;
+        activeManifest = current?.Manifest;
         await SendAsync("setupState", requestId, new
         {
             apiKeyConfigured = apiKey is not null,
+            workbookConfigured = activeDataset is not null,
             applicationOrigin = $"https://{AppConstants.VirtualHostName}",
             version = typeof(MainWindow).Assembly.GetName().Version?.ToString() ?? "development",
         });
+
+        if (current is not null && !current.LoadResult.IsValid)
+        {
+            await SendAsync("workbookUnavailable", requestId, new
+            {
+                message = "The saved coverage workbook could not be loaded. Choose the spreadsheet again in Settings.",
+                errors = current.LoadResult.Errors.Select(issue => issue.Message),
+            });
+        }
+        else if (activeDataset is not null)
+        {
+            await SendCoverageDatasetAsync(requestId);
+        }
 
         if (apiKey is not null)
         {
@@ -143,7 +181,7 @@ public partial class MainWindow : Window
 
     private async Task HandleChooseWorkbookAsync(string requestId)
     {
-        var dialog = new OpenFileDialog
+        OpenFileDialog dialog = new OpenFileDialog
         {
             Title = "Choose coverage spreadsheet",
             Filter = "Excel workbooks (*.xlsx)|*.xlsx",
@@ -157,26 +195,130 @@ public partial class MainWindow : Window
             return;
         }
 
-        var result = WorkbookProbe.Probe(dialog.FileName);
-        await SendAsync("workbookProbeResult", requestId, new
+        var result = await workbookActivationService.ActivateAsync(dialog.FileName);
+        if (!result.LoadResult.IsValid || result.LoadResult.Dataset is null)
         {
-            fileName = Path.GetFileName(dialog.FileName),
-            result.IsValid,
-            sheets = result.Sheets.Select(sheet => new
+            await SendAsync("workbookRejected", requestId, new
             {
-                sheet.Name,
-                sheet.DataRowCount,
-                sheet.ColumnCount,
-                sheet.MissingHeaders,
+                fileName = Path.GetFileName(dialog.FileName),
+                errors = result.LoadResult.Errors.Select(issue => issue.Message),
+            });
+            return;
+        }
+
+        CancelLocationSelection();
+        activeDataset = result.LoadResult.Dataset;
+        activeManifest = result.Manifest;
+        await SendCoverageDatasetAsync(requestId, result.LoadResult.Warnings);
+    }
+
+    private async Task HandleSelectLocationAsync(BridgeMessage message)
+    {
+        if (activeDataset is null)
+        {
+            await SendAsync("locationRejected", message.RequestId, new
+            {
+                message = "Choose a valid coverage spreadsheet in Settings first.",
+            });
+            return;
+        }
+
+        if (!LocationSelectionRequestParser.TryParse(message.Payload, out var request, out var error))
+        {
+            await SendAsync("locationRejected", message.RequestId, new { message = error });
+            return;
+        }
+
+        CancelLocationSelection();
+        locationSelectionCancellation = new CancellationTokenSource();
+        var cancellationToken = locationSelectionCancellation.Token;
+        var dataset = activeDataset;
+        var (Fibre, Candidates) = await Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var fibre = FibreMatcher.Match(dataset.FibreRanges, request!.FibreAddress);
+            cancellationToken.ThrowIfCancellationRequested();
+            var candidates = WirelessCandidateFinder.Find(dataset.Towers, request.Location);
+            cancellationToken.ThrowIfCancellationRequested();
+            return (Fibre: fibre, Candidates: candidates);
+        }, cancellationToken);
+
+        await SendAsync("locationResult", message.RequestId, new
+        {
+            revision = request!.Revision,
+            latitude = request.Location.Latitude,
+            longitude = request.Location.Longitude,
+            request.Source,
+            request.FormattedAddress,
+            fibre = new
+            {
+                status = Fibre.Status.ToString().ToLowerInvariant(),
+                maxSpeeds = Fibre.Match?.MaxSpeeds,
+                notes = Fibre.Match?.Notes,
+                warnings = Fibre.Warnings,
+            },
+            candidates = Candidates.Select(candidate => new
+            {
+                rowNumber = candidate.Tower.SourceRowNumber,
+                name = candidate.Tower.Name,
+                distanceKilometres = candidate.DistanceKilometres,
+                heightFeet = candidate.Tower.HeightFeet,
+                rangeKilometres = candidate.Tower.RangeKilometres,
+                maxDownloadMbps = candidate.Tower.MaxDownloadMbps,
+                maxUploadMbps = candidate.Tower.MaxUploadMbps,
+                notes = candidate.Tower.Notes,
+                latitude = candidate.Tower.Location.Latitude,
+                longitude = candidate.Tower.Location.Longitude,
             }),
-            result.Errors,
         });
+    }
+
+    private async Task SendCoverageDatasetAsync(
+        string requestId,
+        IReadOnlyList<WorkbookValidationIssue>? warnings = null)
+    {
+        if (activeDataset is null)
+        {
+            return;
+        }
+
+        await SendAsync("coverageLoaded", requestId, new
+        {
+            fileName = activeDataset.SourceFileName,
+            activatedAtUtc = activeManifest?.ActivatedAtUtc,
+            towerCount = activeDataset.Towers.Count,
+            fibreRangeCount = activeDataset.FibreRanges.Count,
+            warningCount = activeManifest?.WarningCount ?? warnings?.Count ?? 0,
+            warnings = warnings?.Select(issue => issue.Message) ?? [],
+            towers = activeDataset.Towers.Select(tower => new
+            {
+                rowNumber = tower.SourceRowNumber,
+                name = tower.Name,
+                latitude = tower.Location.Latitude,
+                longitude = tower.Location.Longitude,
+                rangeMetres = tower.RangeKilometres * 1000,
+                heightFeet = tower.HeightFeet,
+                maxDownloadMbps = tower.MaxDownloadMbps,
+                maxUploadMbps = tower.MaxUploadMbps,
+                tower.ApDirectionDegrees,
+                tower.ApCoverageDegrees,
+                tower.Notes,
+                candidateEnabled = tower.CanProduceCandidate,
+            }),
+        });
+    }
+
+    private void CancelLocationSelection()
+    {
+        locationSelectionCancellation?.Cancel();
+        locationSelectionCancellation?.Dispose();
+        locationSelectionCancellation = null;
     }
 
     private async Task ConfigureGoogleAsync(string apiKey)
     {
         var serializedKey = JsonSerializer.Serialize(apiKey);
-        await WebView.CoreWebView2.ExecuteScriptAsync($"window.simpleServiceChecker.configureGoogle({serializedKey});");
+        _ = await WebView.CoreWebView2.ExecuteScriptAsync($"window.simpleServiceChecker.configureGoogle({serializedKey});");
     }
 
     private async Task SendAsync(string type, string? requestId, object payload)
@@ -189,7 +331,7 @@ public partial class MainWindow : Window
             payload,
         });
 
-        await WebView.CoreWebView2.ExecuteScriptAsync($"window.simpleServiceChecker.receive({JsonSerializer.Serialize(message)});");
+        _ = await WebView.CoreWebView2.ExecuteScriptAsync($"window.simpleServiceChecker.receive({JsonSerializer.Serialize(message)});");
     }
 
     private void Core_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
@@ -209,10 +351,12 @@ public partial class MainWindow : Window
         OpenExternalHttpsUri(e.Uri);
     }
 
-    private static bool IsAllowedApplicationUri(string uri) =>
-        Uri.TryCreate(uri, UriKind.Absolute, out var parsed) &&
+    private static bool IsAllowedApplicationUri(string uri)
+    {
+        return Uri.TryCreate(uri, UriKind.Absolute, out var parsed) &&
         parsed.Scheme == Uri.UriSchemeHttps &&
         string.Equals(parsed.Host, AppConstants.VirtualHostName, StringComparison.OrdinalIgnoreCase);
+    }
 
     private static void OpenExternalHttpsUri(string uri)
     {
@@ -221,6 +365,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        Process.Start(new ProcessStartInfo(parsed.AbsoluteUri) { UseShellExecute = true });
+        _ = Process.Start(new ProcessStartInfo(parsed.AbsoluteUri) { UseShellExecute = true });
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        CancelLocationSelection();
+        base.OnClosed(e);
     }
 }

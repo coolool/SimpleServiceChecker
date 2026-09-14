@@ -11,12 +11,9 @@ public static class WirelessCandidateFinder
         GeoCoordinate customerLocation)
     {
         ArgumentNullException.ThrowIfNull(towers);
-        if (!customerLocation.IsValid)
-        {
-            throw new ArgumentOutOfRangeException(nameof(customerLocation), "The customer coordinate is outside the valid latitude or longitude range.");
-        }
-
-        return towers
+        return !customerLocation.IsValid
+            ? throw new ArgumentOutOfRangeException(nameof(customerLocation), "The customer coordinate is outside the valid latitude or longitude range.")
+            : [.. towers
             .Where(tower => tower.CanProduceCandidate && tower.Location.IsValid)
             .Select(tower => new
             {
@@ -33,8 +30,7 @@ public static class WirelessCandidateFinder
             .OrderBy(result => result.Distance)
             .ThenBy(result => result.Tower.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(result => result.Tower.SourceRowNumber)
-            .Select(result => new WirelessCandidate(result.Tower, result.Distance))
-            .ToArray();
+            .Select(result => new WirelessCandidate(result.Tower, result.Distance))];
     }
 }
 
@@ -52,8 +48,8 @@ public static class GeoMath
         var firstLatitude = ToRadians(first.Latitude);
         var secondLatitude = ToRadians(second.Latitude);
         var haversine = Math.Pow(Math.Sin(latitudeDelta / 2), 2) +
-            Math.Cos(firstLatitude) * Math.Cos(secondLatitude) *
-            Math.Pow(Math.Sin(longitudeDelta / 2), 2);
+            (Math.Cos(firstLatitude) * Math.Cos(secondLatitude) *
+            Math.Pow(Math.Sin(longitudeDelta / 2), 2));
 
         return 2 * EarthRadiusKilometres * Math.Asin(Math.Min(1, Math.Sqrt(haversine)));
     }
@@ -67,8 +63,8 @@ public static class GeoMath
         var destinationLatitude = ToRadians(destination.Latitude);
         var longitudeDelta = ToRadians(destination.Longitude - origin.Longitude);
         var y = Math.Sin(longitudeDelta) * Math.Cos(destinationLatitude);
-        var x = Math.Cos(originLatitude) * Math.Sin(destinationLatitude) -
-            Math.Sin(originLatitude) * Math.Cos(destinationLatitude) * Math.Cos(longitudeDelta);
+        var x = (Math.Cos(originLatitude) * Math.Sin(destinationLatitude)) -
+            (Math.Sin(originLatitude) * Math.Cos(destinationLatitude) * Math.Cos(longitudeDelta));
 
         return NormalizeDegrees(ToDegrees(Math.Atan2(y, x)));
     }
@@ -79,9 +75,15 @@ public static class GeoMath
         return normalized < 0 ? normalized + 360 : normalized;
     }
 
-    private static double ToRadians(double degrees) => degrees * Math.PI / 180;
+    private static double ToRadians(double degrees)
+    {
+        return degrees * Math.PI / 180;
+    }
 
-    private static double ToDegrees(double radians) => radians * 180 / Math.PI;
+    private static double ToDegrees(double radians)
+    {
+        return radians * 180 / Math.PI;
+    }
 
     private static void EnsureValid(GeoCoordinate coordinate, string parameterName)
     {

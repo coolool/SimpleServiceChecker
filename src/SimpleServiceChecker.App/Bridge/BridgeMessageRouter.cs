@@ -12,6 +12,8 @@ public static class BridgeMessageRouter
         BridgeMessageTypes.SaveGoogleKey,
         BridgeMessageTypes.ClearGoogleKey,
         BridgeMessageTypes.ChooseWorkbook,
+        BridgeMessageTypes.SelectLocation,
+        BridgeMessageTypes.ClearLocation,
     ];
 
     public static bool TryParse(string json, out BridgeMessage? message, out string error)

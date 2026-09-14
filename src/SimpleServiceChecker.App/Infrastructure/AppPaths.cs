@@ -16,11 +16,15 @@ public static class AppPaths
 
     public static string GoogleKeyFile { get; } = Path.Combine(ConfigDirectory, "google-key.dat");
 
+    public static string CurrentWorkbookFile { get; } = Path.Combine(CoverageDirectory, "current.xlsx");
+
+    public static string CurrentManifestFile { get; } = Path.Combine(CoverageDirectory, "current-manifest.json");
+
     public static void EnsureCreated()
     {
-        Directory.CreateDirectory(ConfigDirectory);
-        Directory.CreateDirectory(CoverageDirectory);
-        Directory.CreateDirectory(TemporaryDirectory);
-        Directory.CreateDirectory(WebViewDataDirectory);
+        _ = Directory.CreateDirectory(ConfigDirectory);
+        _ = Directory.CreateDirectory(CoverageDirectory);
+        _ = Directory.CreateDirectory(TemporaryDirectory);
+        _ = Directory.CreateDirectory(WebViewDataDirectory);
     }
 }

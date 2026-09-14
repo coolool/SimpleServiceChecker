@@ -8,7 +8,7 @@ public sealed class FibreMatcherTests
     public void Match_NormalizesCasePunctuationSpacingAndStreetType()
     {
         var ranges = new[] { Fibre(100, 200, "St. Joseph's", "Road", "Sault Ste Marie", "P6A 1A1") };
-        var address = new FibreAddress(150, "  st josephs ", "RD.", "SAULT  STE. MARIE", "p6a1a1");
+        FibreAddress address = new FibreAddress(150, "  st josephs ", "RD.", "SAULT  STE. MARIE", "p6a1a1");
 
         var result = FibreMatcher.Match(ranges, address);
 
@@ -59,7 +59,7 @@ public sealed class FibreMatcherTests
         var result = FibreMatcher.Match([broad, narrow], Address(150));
 
         Assert.Equal(narrow, result.Match);
-        Assert.Single(result.Warnings);
+        _ = Assert.Single(result.Warnings);
     }
 
     [Fact]
@@ -72,15 +72,35 @@ public sealed class FibreMatcherTests
         Assert.Equal(FibreAvailabilityStatus.AddressRequired, result.Status);
     }
 
+    [Theory]
+    [InlineData("Great Northern Road", "Great Northern", "RD")]
+    [InlineData("Queen Street East", "Queen East", "ST")]
+    [InlineData("Government Rd.", "Government", "RD")]
+    public void TrySplitStreetRoute_ExtractsGoogleRouteStreetType(
+        string route,
+        string expectedName,
+        string expectedType)
+    {
+        var success = AddressNormalizer.TrySplitStreetRoute(route, out var streetName, out var streetType);
+
+        Assert.True(success);
+        Assert.Equal(expectedName, streetName);
+        Assert.Equal(expectedType, streetType);
+    }
+
     private static FibreCoverageRange Fibre(
         int start,
         int? end,
         string streetName = "Main",
         string streetType = "Rd",
         string city = "Sault Ste Marie",
-        string? postalCode = "P6A 1A1") =>
-        new(2, start, end, streetName, streetType, city, postalCode, "150/150", null);
+        string? postalCode = "P6A 1A1")
+    {
+        return new(2, start, end, streetName, streetType, city, postalCode, "150/150", null);
+    }
 
-    private static FibreAddress Address(int civicNumber) =>
-        new(civicNumber, "Main", "Road", "Sault Ste Marie", "P6A1A1");
+    private static FibreAddress Address(int civicNumber)
+    {
+        return new(civicNumber, "Main", "Road", "Sault Ste Marie", "P6A1A1");
+    }
 }

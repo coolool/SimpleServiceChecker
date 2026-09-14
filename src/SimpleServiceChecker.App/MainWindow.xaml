@@ -14,7 +14,7 @@
         <Border x:Name="LoadingOverlay" Background="#FFF4E7D5">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="#FF5E4635" Text="Simple Service Checker" />
-                <TextBlock Margin="0,12,0,0" HorizontalAlignment="Center" Foreground="#FF705B4A" Text="Starting technical proof…" />
+                <TextBlock Margin="0,12,0,0" HorizontalAlignment="Center" Foreground="#FF705B4A" Text="Starting service checker…" />
             </StackPanel>
         </Border>
     </Grid>

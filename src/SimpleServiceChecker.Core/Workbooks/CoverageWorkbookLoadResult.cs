@@ -9,8 +9,8 @@ public sealed record CoverageWorkbookLoadResult(
     public bool IsValid => Dataset is not null && Issues.All(issue => issue.Severity != WorkbookValidationSeverity.Error);
 
     public IReadOnlyList<WorkbookValidationIssue> Errors =>
-        Issues.Where(issue => issue.Severity == WorkbookValidationSeverity.Error).ToArray();
+        [.. Issues.Where(issue => issue.Severity == WorkbookValidationSeverity.Error)];
 
     public IReadOnlyList<WorkbookValidationIssue> Warnings =>
-        Issues.Where(issue => issue.Severity == WorkbookValidationSeverity.Warning).ToArray();
+        [.. Issues.Where(issue => issue.Severity == WorkbookValidationSeverity.Warning)];
 }

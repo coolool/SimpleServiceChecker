@@ -4,7 +4,7 @@ SimpleServiceChecker is a low-maintenance Windows desktop application for sales 
 
 ## Status
 
-Packages 1 and 2 are accepted. Package 3 sales-interface and map-workflow work is next.
+Packages 1 and 2 are accepted. Package 3 sales-interface and map-workflow implementation is ready for owner acceptance.
 
 ## Product boundaries
 
@@ -27,15 +27,15 @@ dotnet build SimpleServiceChecker.sln --configuration Release --no-restore
 dotnet test SimpleServiceChecker.sln --configuration Release --no-build
 ```
 
-Create the unsigned, self-contained Package 1 proof with:
+Create the unsigned, self-contained Windows application build with:
 
 ```powershell
-dotnet publish src\SimpleServiceChecker.App\SimpleServiceChecker.App.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore --output artifacts\proof
+dotnet publish src\SimpleServiceChecker.App\SimpleServiceChecker.App.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore --output artifacts\app
 ```
 
-The proof does not require Excel or a separately installed .NET runtime. It currently requires the Microsoft Edge WebView2 Evergreen Runtime; installer detection and bootstrap belong to Package 6.
+The application does not require Excel or a separately installed .NET runtime. It currently requires the Microsoft Edge WebView2 Evergreen Runtime; installer detection and bootstrap belong to Package 6.
 
-See [Package 1 proof checklist](docs/PACKAGE_1_PROOF.md) before accepting the desktop and Google integration direction.
+See [Package 3 sales-map checklist](docs/PACKAGE_3_SALES_MAP.md) for the current manual acceptance gate.
 
 ## Repository safety
 

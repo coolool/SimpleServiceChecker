@@ -8,90 +8,64 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="shell">
-    <aside class="sidebar" aria-label="Service checker controls">
+  <main id="shell" class="shell">
+    <aside id="sidebar" class="sidebar" aria-label="Service checker controls">
       <header class="brand">
-        <span class="eyebrow">Technical proof</span>
-        <h1>Simple Service Checker</h1>
-        <p>Fast local fibre and wireless planning for sales calls.</p>
+        <div><span class="eyebrow">Sales planning</span><h1>Simple Service Checker</h1></div>
+        <button id="settings-toggle" class="icon-button" type="button" aria-expanded="false" aria-controls="settings-panel" title="Settings"><span aria-hidden="true">⚙</span><span class="sr-only">Open settings</span></button>
+        <p>Quickly check local fibre and wireless options while speaking with a customer.</p>
       </header>
 
-      <section class="panel" aria-labelledby="google-heading">
-        <div class="panel-heading">
-          <h2 id="google-heading">Google setup</h2>
-          <span id="key-badge" class="badge neutral">Not configured</span>
+      <section id="location-panel" class="panel primary-panel" aria-labelledby="location-heading">
+        <div class="panel-heading"><h2 id="location-heading">Customer location</h2><button id="clear-location" class="link-button" type="button" disabled>Clear</button></div>
+        <label class="sr-only" for="place-control">Search for a customer address</label>
+        <div id="place-control" class="place-control"><div class="place-placeholder">Google address search loads after setup.</div></div>
+        <div class="coordinate-grid" aria-label="Decimal coordinate entry">
+          <div><label for="latitude">Latitude</label><input id="latitude" inputmode="decimal" autocomplete="off" placeholder="46.5210"></div>
+          <div><label for="longitude">Longitude</label><input id="longitude" inputmode="decimal" autocomplete="off" placeholder="-84.3460"></div>
+          <button id="check-coordinates" type="button">Check</button>
         </div>
-        <label for="google-key">Company API key</label>
-        <div class="input-row">
-          <input id="google-key" type="password" autocomplete="off" spellcheck="false" placeholder="Enter locally">
-          <button id="save-key" type="button">Save &amp; test</button>
-        </div>
-        <p class="privacy-note">Encrypted for this Windows user. Never included in the installer or repository.</p>
-        <button id="clear-key" class="link-button" type="button">Remove saved key</button>
+        <p class="help-text">Or click the map and drag the blue customer pin.</p>
+        <div id="location-status" class="status-box neutral" role="status" aria-live="polite">Choose an address, enter coordinates, or click the map.</div>
       </section>
 
-      <section class="panel" aria-labelledby="workbook-heading">
-        <div class="panel-heading">
-          <h2 id="workbook-heading">Coverage workbook</h2>
-          <span id="workbook-badge" class="badge neutral">Not checked</span>
-        </div>
-        <button id="choose-workbook" class="wide-button" type="button">Choose spreadsheet</button>
-        <div id="workbook-result" class="result muted" aria-live="polite">Choose the two-tab workbook to verify its headers and record counts.</div>
+      <section class="panel results-panel" aria-labelledby="fibre-heading">
+        <div class="result-title"><span class="result-icon fibre-icon" aria-hidden="true">F</span><div><span class="eyebrow">Fibre first</span><h2 id="fibre-heading">Fibre availability</h2></div></div>
+        <div id="fibre-result" class="availability empty" aria-live="polite"><strong>No location selected</strong><span>The active workbook will be checked for an exact civic-address match.</span></div>
       </section>
 
-      <section class="panel" aria-labelledby="proof-heading">
-        <h2 id="proof-heading">Provider proof</h2>
-        <ul class="proof-list">
-          <li><span id="map-proof" class="proof-dot"></span>Maps JavaScript</li>
-          <li><span id="places-proof" class="proof-dot"></span>Places (New)</li>
-          <li><span id="elevation-proof" class="proof-dot"></span>Elevation</li>
-        </ul>
-        <p id="proof-message" class="result muted" aria-live="polite">Save the restricted company key to run the live proof.</p>
+      <section class="wireless-section" aria-labelledby="wireless-heading">
+        <div class="section-heading"><div><span class="eyebrow">Wireless candidates</span><h2 id="wireless-heading">Towers in published range</h2></div><span id="candidate-count" class="count-badge">—</span></div>
+        <div id="candidate-list" class="candidate-list" aria-live="polite"><div class="empty-card">Select a customer location to see nearby towers.</div></div>
       </section>
 
-      <footer>
-        <span id="origin-label">Secure local application origin</span>
-        <span>Wireless results are planning candidates, not installation guarantees.</span>
-      </footer>
+      <section id="settings-panel" class="settings-panel" aria-labelledby="settings-heading" hidden>
+        <div class="settings-title"><div><span class="eyebrow">Local setup</span><h2 id="settings-heading">Settings</h2></div><button id="settings-close" class="icon-button" type="button" aria-label="Close settings">×</button></div>
+        <section class="panel" aria-labelledby="google-heading">
+          <div class="panel-heading"><h3 id="google-heading">Google Maps</h3><span id="key-badge" class="badge neutral">Not configured</span></div>
+          <label for="google-key">Company browser API key</label>
+          <div class="input-row"><input id="google-key" type="password" autocomplete="off" spellcheck="false" placeholder="Enter locally"><button id="save-key" type="button">Save</button></div>
+          <p class="privacy-note">Encrypted for this Windows user. Enable Maps JavaScript, Places (New), and Elevation, with billing and the approved application restriction.</p>
+          <button id="clear-key" class="link-button" type="button">Remove saved key</button>
+          <div id="provider-result" class="status-box neutral" aria-live="polite">Google-dependent controls are unavailable until configured.</div>
+        </section>
+        <section class="panel" aria-labelledby="workbook-heading">
+          <div class="panel-heading"><h3 id="workbook-heading">Coverage workbook</h3><span id="workbook-badge" class="badge neutral">Not configured</span></div>
+          <button id="choose-workbook" class="wide-button" type="button">Choose spreadsheet</button>
+          <div id="workbook-result" class="status-box neutral" aria-live="polite">Choose the two-tab workbook. The validated copy remains local.</div>
+        </section>
+      </section>
+
+      <footer><span id="data-summary">No coverage workbook loaded.</span><span>Planning candidates only—not an installation or service guarantee.</span></footer>
     </aside>
-
-    <section class="workspace" aria-label="Map and terrain proof">
-      <div id="map" role="application" aria-label="Synthetic Google map proof">
-        <div class="map-placeholder">
-          <strong>Google Maps proof</strong>
-          <span>Configure the company key to load the map.</span>
-        </div>
-      </div>
-      <div class="map-toolbar">
-        <div id="place-control" class="place-control" aria-label="Google place search proof"></div>
-        <div class="map-notes">
-          <span class="synthetic-label">Synthetic demonstration data</span>
-          <section class="clearance-legend" aria-label="Line clearance legend">
-            <strong>Line clearance</strong>
-            <span><i class="clearance-black"></i>Black: Obstruction</span>
-            <span><i class="clearance-red"></i>Red: 10 ft or less clearance (≤ 3.048 m)</span>
-            <span><i class="clearance-orange"></i>Orange: 30 ft or less clearance (≤ 9.144 m)</span>
-            <span><i class="clearance-yellow"></i>Yellow: 50 ft or less clearance (≤ 15.24 m)</span>
-            <span><i class="clearance-green"></i>Green: 51 ft or more clearance</span>
-          </section>
-        </div>
-      </div>
-      <section class="chart-card" aria-labelledby="chart-heading">
-        <div>
-          <span class="eyebrow">Wireless candidate</span>
-          <h2 id="chart-heading">Synthetic terrain and clearance profile</h2>
-        </div>
-        <div class="legend" aria-label="Chart legend">
-          <span><i class="terrain"></i>Terrain</span>
-          <span><i class="line-of-sight"></i>Line of sight</span>
-          <span><i class="fresnel"></i>First Fresnel zone</span>
-        </div>
-        <div class="chart-wrap"><canvas id="terrain-chart"></canvas></div>
-      </section>
+    <div id="sidebar-resizer" class="sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" tabindex="0"></div>
+    <section class="workspace" aria-label="Coverage map">
+      <div id="map" role="application" aria-label="Google coverage map"><div class="map-placeholder"><strong>Map unavailable</strong><span>Open Settings to add the company Google API key.</span></div></div>
+      <div class="map-overlay top-left"><span id="map-status" class="map-status"><b aria-hidden="true">○</b> Waiting for setup</span></div>
+      <div class="map-overlay top-right"><section class="map-legend" aria-label="Map legend"><strong>Coverage map</strong><span><i class="legend-dot customer"></i>Customer location</span><span><i class="legend-dot tower"></i>Tower</span><span><i class="legend-ring"></i>Published tower range</span><span><i class="legend-line"></i>Wireless candidate path</span></section></div>
+      <div class="map-overlay bottom-left"><p class="map-help">Click anywhere to check coordinates. Drag the blue pin to refine the location.</p></div>
     </section>
   </main>
-
-  <script src="vendor/chart.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
