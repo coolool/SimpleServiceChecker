@@ -42,10 +42,32 @@ Package 1 is accepted. Real workbook towers are intentionally deferred to Packag
 
 - [ ] Recreate the simplified Service Checker visual design.
 - [ ] Add address, coordinate, and map-pin location selection.
-- [ ] Add fibre address-range matching.
-- [ ] Add tower range filtering and candidate ordering.
+- [x] Add fibre address-range matching in Core (September 14, 2026).
+- [x] Add tower range filtering and candidate ordering in Core (September 14, 2026).
 - [ ] Add tower circles, paths, terrain profiles, and Fresnel-zone clearance.
 - [ ] Add clear unavailable, incomplete-data, provider-error, and offline states.
+
+### Package 2 - Coverage domain and workbook validation
+
+- [x] Add typed tower, fibre-range, dataset, manifest, validation-warning, and validation-error models.
+- [x] Parse `.xlsx` files read-only with exact sheets, trimmed/reordered headers, original row numbers, and no Excel dependency.
+- [x] Validate tower coordinates, height, range, speeds, AP direction, and AP coverage with future-safe sector rules.
+- [x] Parse finite and `*` fibre civic ranges and normalize address case, punctuation, spacing, street types, city, and postal code.
+- [x] Add Haversine distance, inclusive range filtering, deterministic candidate sorting, and sector filtering.
+- [x] Return deterministic, sales-readable row and column errors while retaining valid zero-height/range rows as non-candidate warnings.
+- [x] Owner accepts Package 2 before Package 3 interface work begins (September 14, 2026).
+
+#### Package 2 evidence
+
+- Release build: succeeded with zero warnings and zero errors on Windows 10 x64.
+- Automated tests: 48 passed across Core and App. Package 2 tests cover reordered columns, missing and duplicate sheets/headers, whitespace, degree symbols, numeric text, blanks, zero and invalid values, coordinate boundaries, omnidirectional and sector behavior, fibre boundaries and conflicts, exact tower-range boundaries, cancellation, and file-read failures.
+- Supplied workbook: the full Package 2 parser loaded 224 tower rows and 16 fibre rows read-only outside Git. It reported only the two expected non-blocking data warnings: zero tower height at workbook row 103 and zero tower range at workbook row 142.
+- Isolation gate: every coverage result and validation rule is exercised in `SimpleServiceChecker.Core.Tests`, which references Core only and does not use WebView2 or Google.
+- The source workbook, company Google key, searched locations, and real tower values remain outside the repository and test output.
+- GitHub Actions independently restored, built, ran all 48 tests, checked JavaScript, and published the self-contained Windows proof successfully in pull request 2.
+- Owner approved Package 2 on September 14, 2026.
+
+Package 2 does not render the workbook towers. Package 3 will connect this accepted Core dataset to the sales interface and Google map.
 
 ## Phase 3 - Spreadsheet management
 
