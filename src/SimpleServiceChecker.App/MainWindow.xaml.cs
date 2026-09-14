@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Windows;
@@ -18,9 +19,13 @@ public partial class MainWindow : Window
     private readonly WorkbookActivationService workbookActivationService = new(
         AppPaths.CurrentWorkbookFile,
         AppPaths.CurrentManifestFile,
+        AppPaths.PreviousWorkbookFile,
+        AppPaths.PreviousManifestFile,
         AppPaths.TemporaryDirectory);
+    private readonly SemaphoreSlim workbookOperationLock = new(1, 1);
     private CoverageDataset? activeDataset;
     private CoverageWorkbookManifest? activeManifest;
+    private string? selectedWorkbookSource;
     private CancellationTokenSource? locationSelectionCancellation;
     private CancellationTokenSource? terrainAnalysisCancellation;
     private ActiveLocationSelection? activeLocationSelection;
@@ -35,6 +40,7 @@ public partial class MainWindow : Window
         try
         {
             AppPaths.EnsureCreated();
+            workbookActivationService.CleanupTemporaryFiles();
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: AppPaths.WebViewDataDirectory);
             await WebView.EnsureCoreWebView2Async(environment);
 
@@ -101,6 +107,18 @@ public partial class MainWindow : Window
                 case BridgeMessageTypes.ChooseWorkbook:
                     await HandleChooseWorkbookAsync(message.RequestId);
                     break;
+                case BridgeMessageTypes.ActivateWorkbook:
+                    await HandleActivateWorkbookAsync(message.RequestId);
+                    break;
+                case BridgeMessageTypes.ReloadWorkbook:
+                    await HandleReloadWorkbookAsync(message.RequestId);
+                    break;
+                case BridgeMessageTypes.OpenCurrentWorkbook:
+                    await HandleOpenCurrentWorkbookAsync(message.RequestId);
+                    break;
+                case BridgeMessageTypes.RestorePreviousWorkbook:
+                    await HandleRestorePreviousWorkbookAsync(message.RequestId);
+                    break;
                 case BridgeMessageTypes.SelectLocation:
                     await HandleSelectLocationAsync(message);
                     break;
@@ -137,6 +155,9 @@ public partial class MainWindow : Window
         {
             apiKeyConfigured = apiKey is not null,
             workbookConfigured = activeDataset is not null,
+            canReloadWorkbook = selectedWorkbookSource is not null,
+            canRestorePrevious = workbookActivationService.HasPreviousWorkbook,
+            applicationSchemaVersion = CoverageWorkbookManifest.CurrentSchemaVersion,
             applicationOrigin = $"https://{AppConstants.VirtualHostName}",
             version = typeof(MainWindow).Assembly.GetName().Version?.ToString() ?? "development",
         });
@@ -147,11 +168,12 @@ public partial class MainWindow : Window
             {
                 message = "The saved coverage workbook could not be loaded. Choose the spreadsheet again in Settings.",
                 errors = current.LoadResult.Errors.Select(issue => issue.Message),
+                canRestorePrevious = workbookActivationService.HasPreviousWorkbook,
             });
         }
         else if (activeDataset is not null)
         {
-            await SendCoverageDatasetAsync(requestId);
+            await SendCoverageDatasetAsync(requestId, recoveredFromPrevious: current?.RecoveredFromPrevious == true);
         }
 
         if (apiKey is not null)
@@ -189,37 +211,205 @@ public partial class MainWindow : Window
 
     private async Task HandleChooseWorkbookAsync(string requestId)
     {
-        OpenFileDialog dialog = new OpenFileDialog
-        {
-            Title = "Choose coverage spreadsheet",
-            Filter = "Excel workbooks (*.xlsx)|*.xlsx",
-            CheckFileExists = true,
-            Multiselect = false,
-        };
-
-        if (dialog.ShowDialog(this) != true)
+        var sourceFile = ChooseWorkbookFile("Choose coverage spreadsheet");
+        if (sourceFile is null)
         {
             await SendAsync("workbookSelectionCancelled", requestId, new { });
             return;
         }
 
-        var result = await workbookActivationService.ActivateAsync(dialog.FileName);
-        if (!result.LoadResult.IsValid || result.LoadResult.Dataset is null)
+        selectedWorkbookSource = sourceFile;
+        await SendAsync("workbookSelected", requestId, new
+        {
+            fileName = Path.GetFileName(sourceFile),
+            canActivate = true,
+            canReloadWorkbook = true,
+        });
+    }
+
+    private async Task HandleActivateWorkbookAsync(string requestId)
+    {
+        if (selectedWorkbookSource is null)
         {
             await SendAsync("workbookRejected", requestId, new
             {
-                fileName = Path.GetFileName(dialog.FileName),
-                errors = result.LoadResult.Errors.Select(issue => issue.Message),
+                errors = new[] { "Choose a spreadsheet before validating and activating it." },
+                canRestorePrevious = workbookActivationService.HasPreviousWorkbook,
             });
             return;
         }
 
+        await ActivateWorkbookSourceAsync(selectedWorkbookSource, requestId, "activated");
+    }
+
+    private async Task HandleReloadWorkbookAsync(string requestId)
+    {
+        var sourceFile = selectedWorkbookSource;
+        if (sourceFile is null || !File.Exists(sourceFile))
+        {
+            sourceFile = ChooseWorkbookFile("Choose the source spreadsheet to reload");
+            if (sourceFile is null)
+            {
+                await SendAsync("workbookSelectionCancelled", requestId, new { });
+                return;
+            }
+
+            selectedWorkbookSource = sourceFile;
+        }
+
+        await ActivateWorkbookSourceAsync(sourceFile, requestId, "reloaded");
+    }
+
+    private async Task HandleOpenCurrentWorkbookAsync(string requestId)
+    {
+        if (!await workbookOperationLock.WaitAsync(0))
+        {
+            await SendWorkbookBusyAsync(requestId);
+            return;
+        }
+
+        try
+        {
+            var inspectionFile = await workbookActivationService.CreateReadOnlyInspectionCopyAsync();
+            if (inspectionFile is null)
+            {
+                await SendAsync("workbookOperationFailed", requestId, new
+                {
+                    message = "There is no valid active workbook to open.",
+                    canRestorePrevious = workbookActivationService.HasPreviousWorkbook,
+                });
+                return;
+            }
+
+            _ = Process.Start(new ProcessStartInfo(inspectionFile) { UseShellExecute = true });
+            await SendAsync("workbookOpened", requestId, new
+            {
+                message = "Opened a read-only copy. Changes cannot alter active coverage.",
+            });
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Win32Exception)
+        {
+            await SendAsync("workbookOperationFailed", requestId, new
+            {
+                message = "Windows could not open the spreadsheet. The active coverage remains available.",
+                canRestorePrevious = workbookActivationService.HasPreviousWorkbook,
+            });
+        }
+        finally
+        {
+            _ = workbookOperationLock.Release();
+        }
+    }
+
+    private async Task HandleRestorePreviousWorkbookAsync(string requestId)
+    {
+        if (!await workbookOperationLock.WaitAsync(0))
+        {
+            await SendWorkbookBusyAsync(requestId);
+            return;
+        }
+
+        try
+        {
+            await SendAsync("workbookOperationStarted", requestId, new { message = "Validating the previous workbook before restoration…" });
+            var result = await workbookActivationService.RestorePreviousAsync();
+            if (result is null)
+            {
+                await SendAsync("workbookOperationFailed", requestId, new
+                {
+                    message = "No previous workbook is available to restore.",
+                    canRestorePrevious = false,
+                });
+                return;
+            }
+
+            if (!result.LoadResult.IsValid || result.LoadResult.Dataset is null || result.Manifest is null)
+            {
+                await SendWorkbookRejectedAsync(requestId, result, null);
+                return;
+            }
+
+            selectedWorkbookSource = null;
+            ApplyActiveWorkbook(result);
+            await SendCoverageDatasetAsync(requestId, result.LoadResult.Warnings, operation: "restored", resetLocation: true);
+        }
+        finally
+        {
+            _ = workbookOperationLock.Release();
+        }
+    }
+
+    private async Task ActivateWorkbookSourceAsync(string sourceFile, string requestId, string operation)
+    {
+        if (!await workbookOperationLock.WaitAsync(0))
+        {
+            await SendWorkbookBusyAsync(requestId);
+            return;
+        }
+
+        try
+        {
+            await SendAsync("workbookOperationStarted", requestId, new
+            {
+                message = $"Validating {Path.GetFileName(sourceFile)} before activation…",
+            });
+            var result = await workbookActivationService.ActivateAsync(sourceFile);
+            if (!result.LoadResult.IsValid || result.LoadResult.Dataset is null || result.Manifest is null)
+            {
+                await SendWorkbookRejectedAsync(requestId, result, Path.GetFileName(sourceFile));
+                return;
+            }
+
+            ApplyActiveWorkbook(result);
+            await SendCoverageDatasetAsync(requestId, result.LoadResult.Warnings, operation, resetLocation: true);
+        }
+        finally
+        {
+            _ = workbookOperationLock.Release();
+        }
+    }
+
+    private void ApplyActiveWorkbook(WorkbookActivationResult result)
+    {
         CancelLocationSelection();
         CancelTerrainAnalysis();
         activeLocationSelection = null;
         activeDataset = result.LoadResult.Dataset;
         activeManifest = result.Manifest;
-        await SendCoverageDatasetAsync(requestId, result.LoadResult.Warnings);
+    }
+
+    private async Task SendWorkbookRejectedAsync(
+        string requestId,
+        WorkbookActivationResult result,
+        string? fileName)
+    {
+        await SendAsync("workbookRejected", requestId, new
+        {
+            fileName,
+            errors = result.LoadResult.Errors.Select(issue => issue.Message),
+            warnings = result.LoadResult.Warnings.Select(issue => issue.Message),
+            canRestorePrevious = workbookActivationService.HasPreviousWorkbook,
+        });
+    }
+
+    private Task SendWorkbookBusyAsync(string requestId) =>
+        SendAsync("workbookOperationFailed", requestId, new
+        {
+            message = "Another spreadsheet operation is already in progress.",
+            canRestorePrevious = workbookActivationService.HasPreviousWorkbook,
+        });
+
+    private string? ChooseWorkbookFile(string title)
+    {
+        OpenFileDialog dialog = new OpenFileDialog
+        {
+            Title = title,
+            Filter = "Excel workbooks (*.xlsx)|*.xlsx",
+            CheckFileExists = true,
+            Multiselect = false,
+        };
+
+        return dialog.ShowDialog(this) == true ? dialog.FileName : null;
     }
 
     private async Task HandleSelectLocationAsync(BridgeMessage message)
@@ -396,7 +586,10 @@ public partial class MainWindow : Window
 
     private async Task SendCoverageDatasetAsync(
         string requestId,
-        IReadOnlyList<WorkbookValidationIssue>? warnings = null)
+        IReadOnlyList<WorkbookValidationIssue>? warnings = null,
+        string? operation = null,
+        bool resetLocation = false,
+        bool recoveredFromPrevious = false)
     {
         if (activeDataset is null)
         {
@@ -407,10 +600,17 @@ public partial class MainWindow : Window
         {
             fileName = activeDataset.SourceFileName,
             activatedAtUtc = activeManifest?.ActivatedAtUtc,
+            schemaVersion = activeManifest?.SchemaVersion,
+            applicationSchemaVersion = CoverageWorkbookManifest.CurrentSchemaVersion,
             towerCount = activeDataset.Towers.Count,
             fibreRangeCount = activeDataset.FibreRanges.Count,
             warningCount = activeManifest?.WarningCount ?? warnings?.Count ?? 0,
-            warnings = warnings?.Select(issue => issue.Message) ?? [],
+            warnings = warnings?.Select(issue => issue.Message) ?? activeManifest?.Warnings ?? [],
+            canReloadWorkbook = selectedWorkbookSource is not null,
+            canRestorePrevious = workbookActivationService.HasPreviousWorkbook,
+            operation,
+            resetLocation,
+            recoveredFromPrevious,
             towers = activeDataset.Towers.Select(tower => new
             {
                 rowNumber = tower.SourceRowNumber,

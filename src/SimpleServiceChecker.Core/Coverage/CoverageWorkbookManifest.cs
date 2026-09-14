@@ -7,7 +7,8 @@ public sealed record CoverageWorkbookManifest(
     DateTimeOffset ActivatedAtUtc,
     int TowerCount,
     int FibreRangeCount,
-    int WarningCount)
+    int WarningCount,
+    IReadOnlyList<string>? Warnings = null)
 {
     public const int CurrentSchemaVersion = 1;
 }

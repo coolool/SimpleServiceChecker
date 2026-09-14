@@ -56,6 +56,25 @@
         <section class="panel" aria-labelledby="workbook-heading">
           <div class="panel-heading"><h3 id="workbook-heading">Coverage workbook</h3><span id="workbook-badge" class="badge neutral">Not configured</span></div>
           <button id="choose-workbook" class="wide-button" type="button">Choose spreadsheet</button>
+          <div id="workbook-selection" class="workbook-selection" aria-live="polite">No replacement selected.</div>
+          <button id="activate-workbook" class="wide-button primary-action" type="button" disabled>Validate and activate</button>
+          <div class="workbook-actions" aria-label="Active workbook actions">
+            <button id="reload-workbook" type="button" disabled>Reload</button>
+            <button id="open-current-workbook" type="button" disabled>Open current spreadsheet</button>
+            <button id="restore-previous-workbook" type="button" disabled>Restore previous</button>
+          </div>
+          <section id="workbook-current" class="workbook-current" aria-labelledby="workbook-current-heading" hidden>
+            <strong id="workbook-current-heading">Active local copy</strong>
+            <span id="workbook-current-file" class="workbook-file"></span>
+            <dl class="workbook-facts">
+              <div><dt>Activated</dt><dd id="workbook-activated">—</dd></div>
+              <div><dt>Towers</dt><dd id="workbook-tower-count">—</dd></div>
+              <div><dt>Fibre ranges</dt><dd id="workbook-fibre-count">—</dd></div>
+              <div><dt>Warnings</dt><dd id="workbook-warning-count">—</dd></div>
+              <div><dt>Schema</dt><dd id="workbook-schema-version">—</dd></div>
+            </dl>
+            <ul id="workbook-warnings" class="workbook-warnings" hidden></ul>
+          </section>
           <div id="workbook-result" class="status-box neutral" aria-live="polite">Choose the two-tab workbook. The validated copy remains local.</div>
         </section>
       </section>

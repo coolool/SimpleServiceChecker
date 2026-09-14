@@ -8,18 +8,27 @@ namespace SimpleServiceChecker.App.Tests;
 
 public sealed class BridgeMessageRouterTests
 {
-    [Fact]
-    public void TryParse_AcceptsAnAllowedVersionedMessage()
+    [Theory]
+    [InlineData(BridgeMessageTypes.ChooseWorkbook)]
+    [InlineData(BridgeMessageTypes.ActivateWorkbook)]
+    [InlineData(BridgeMessageTypes.ReloadWorkbook)]
+    [InlineData(BridgeMessageTypes.OpenCurrentWorkbook)]
+    [InlineData(BridgeMessageTypes.RestorePreviousWorkbook)]
+    public void TryParse_AcceptsAnAllowedVersionedWorkbookMessage(string messageType)
     {
-        const string json = /*lang=json,strict*/ """
-            {"version":1,"type":"chooseWorkbook","requestId":"request-1","payload":{}}
-            """;
+        var json = JsonSerializer.Serialize(new
+        {
+            version = 1,
+            type = messageType,
+            requestId = "request-1",
+            payload = new { },
+        });
 
         var success = BridgeMessageRouter.TryParse(json, out var message, out var error);
 
         Assert.True(success, error);
         Assert.NotNull(message);
-        Assert.Equal(BridgeMessageTypes.ChooseWorkbook, message.Type);
+        Assert.Equal(messageType, message.Type);
     }
 
     [Fact]

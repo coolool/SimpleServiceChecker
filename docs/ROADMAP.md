@@ -134,10 +134,22 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 
 ## Phase 3 - Spreadsheet management
 
-- [ ] Add Choose, Validate, Activate, Reload, Open, and Restore actions.
-- [ ] Validate exact sheet and column contracts with row-specific warnings.
-- [ ] Keep the current data active when a replacement is invalid or interrupted.
-- [ ] Add a visible data filename, activation time, record count, and warning summary.
+- [x] Add Choose, Validate, Activate, Reload, Open, and Restore actions.
+- [x] Validate exact sheet and column contracts with row-specific warnings.
+- [x] Keep the current data active when a replacement is invalid or interrupted.
+- [x] Add a visible data filename, activation time, record count, warning summary, and schema version.
+- [x] Keep source paths session-only, read sources only during validation or explicit reload, and open only a read-only inspection copy.
+- [x] Persist SHA-256 manifests plus current and previous local copies, with startup integrity checking and previous-copy recovery.
+- [ ] Owner accepts Package 5 before Package 6 installer and release work begins.
+
+### Package 5 implementation evidence
+
+- Release build succeeds with zero warnings and zero errors on Windows 10 x64.
+- All 94 Core and App automated tests pass, and browser JavaScript passes its syntax check.
+- New lifecycle tests cover invalid workbooks, missing and exclusively locked sources, retained active data, persisted warning details, tamper rejection, startup recovery from corruption, restore after service recreation, and cleanup of read-only inspection copies.
+- The self-contained `win-x64` review build publishes successfully without Excel or a separately installed .NET runtime.
+- The selected source path is never stored in the manifest or preferences. The source is copied using shared read access for validation or explicit reload and is never watched or edited.
+- Manual owner review remains required for the visible workflow and Package 5 gate.
 
 ## Phase 4 - Installer and release
 

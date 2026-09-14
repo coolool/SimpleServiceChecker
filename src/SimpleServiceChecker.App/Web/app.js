@@ -6,6 +6,9 @@
   const state = {
     apiKeyConfigured: false,
     workbookConfigured: false,
+    workbookBusy: false,
+    workbookSelected: false,
+    canRestorePrevious: false,
     map: null,
     towerData: null,
     towerRanges: [],
@@ -40,7 +43,10 @@
   const elements = Object.fromEntries([
     "shell", "sidebar", "sidebar-resizer", "settings-toggle", "settings-close", "settings-panel",
     "google-key", "save-key", "clear-key", "key-badge", "provider-result",
-    "choose-workbook", "workbook-badge", "workbook-result", "data-summary",
+    "choose-workbook", "activate-workbook", "reload-workbook", "open-current-workbook", "restore-previous-workbook",
+    "workbook-selection", "workbook-current", "workbook-current-file", "workbook-activated",
+    "workbook-tower-count", "workbook-fibre-count", "workbook-warning-count", "workbook-schema-version",
+    "workbook-warnings", "workbook-badge", "workbook-result", "data-summary",
     "place-control", "latitude", "longitude", "check-coordinates", "clear-location",
     "street-view-action", "street-view-status", "street-view-button",
     "location-status", "fibre-result", "candidate-count", "candidate-list", "map-status",
@@ -103,6 +109,8 @@
         state.firstRunSetup = !state.apiKeyConfigured || !state.workbookConfigured;
         setBadge(elements.key_badge, state.apiKeyConfigured ? "Saved locally" : "Not configured", state.apiKeyConfigured ? "success" : "neutral");
         setBadge(elements.workbook_badge, state.workbookConfigured ? "Ready" : "Not configured", state.workbookConfigured ? "success" : "neutral");
+        state.canRestorePrevious = Boolean(payload.canRestorePrevious);
+        updateWorkbookControls();
         if (!state.apiKeyConfigured || !state.workbookConfigured) {
           showSettings(true);
         }
@@ -113,17 +121,47 @@
       case "coverageLoaded":
         acceptCoverage(payload);
         break;
+      case "workbookSelected":
+        state.workbookSelected = Boolean(payload.canActivate);
+        elements.workbook_selection.textContent = payload.fileName ? `Selected: ${payload.fileName}` : "Spreadsheet selected.";
+        setStatus(elements.workbook_result, "Ready to validate. Active coverage will not change unless validation succeeds.");
+        updateWorkbookControls();
+        break;
+      case "workbookOperationStarted":
+        setWorkbookBusy(true);
+        setStatus(elements.workbook_result, payload.message ?? "Validating the spreadsheet…");
+        break;
       case "workbookRejected":
+        setWorkbookBusy(false);
+        state.canRestorePrevious = Boolean(payload.canRestorePrevious);
         setBadge(elements.workbook_badge, state.workbookConfigured ? "Active retained" : "Needs attention", state.workbookConfigured ? "success" : "error");
-        setStatus(elements.workbook_result, `${(payload.errors ?? ["The workbook is not valid."]).join(" ")} ${state.workbookConfigured ? "The current working copy remains active." : ""}`.trim(), "error");
+        showWorkbookIssues(payload.errors ?? ["The workbook is not valid."], payload.warnings ?? []);
+        updateWorkbookControls();
         break;
       case "workbookUnavailable":
+        setWorkbookBusy(false);
         state.workbookConfigured = false;
+        state.canRestorePrevious = Boolean(payload.canRestorePrevious);
         setBadge(elements.workbook_badge, "Unavailable", "error");
         setStatus(elements.workbook_result, payload.message ?? "The saved workbook is unavailable.", "error");
+        elements.workbook_current.hidden = true;
+        updateWorkbookControls();
         showSettings(true);
         break;
       case "workbookSelectionCancelled":
+        setWorkbookBusy(false);
+        updateWorkbookControls();
+        break;
+      case "workbookOpened":
+        setWorkbookBusy(false);
+        setStatus(elements.workbook_result, payload.message ?? "Opened a read-only copy.", "success");
+        updateWorkbookControls();
+        break;
+      case "workbookOperationFailed":
+        setWorkbookBusy(false);
+        state.canRestorePrevious = Boolean(payload.canRestorePrevious);
+        setStatus(elements.workbook_result, payload.message ?? "The spreadsheet operation could not be completed. Active coverage was not changed.", "error");
+        updateWorkbookControls();
         break;
       case "googleKeyRejected":
         setBadge(elements.key_badge, "Check key", "error");
@@ -161,12 +199,62 @@
     state.coverage = payload;
     state.workbookConfigured = true;
     state.fittedCoverage = false;
+    state.workbookBusy = false;
+    state.canRestorePrevious = Boolean(payload.canRestorePrevious);
     setBadge(elements.workbook_badge, "Ready", "success");
     const warningText = payload.warningCount === 1 ? "1 non-blocking warning" : `${payload.warningCount ?? 0} non-blocking warnings`;
-    setStatus(elements.workbook_result, `${payload.fileName}: ${payload.towerCount} towers and ${payload.fibreRangeCount} fibre ranges; ${warningText}.`, payload.warningCount ? "warning" : "success");
+    const operationText = payload.recoveredFromPrevious
+      ? "The active copy was damaged, so the last valid previous copy was recovered."
+      : payload.operation
+        ? `Spreadsheet ${payload.operation}.`
+        : "Active local copy loaded.";
+    setStatus(elements.workbook_result, `${operationText} ${warningText}.`, payload.warningCount ? "warning" : "success");
     elements.data_summary.textContent = `${payload.fileName} · ${payload.towerCount} towers · ${payload.fibreRangeCount} fibre ranges`;
+    elements.workbook_current.hidden = false;
+    elements.workbook_current_file.textContent = payload.fileName ?? "Coverage workbook";
+    elements.workbook_activated.textContent = formatDateTime(payload.activatedAtUtc);
+    elements.workbook_tower_count.textContent = String(payload.towerCount ?? 0);
+    elements.workbook_fibre_count.textContent = String(payload.fibreRangeCount ?? 0);
+    elements.workbook_warning_count.textContent = String(payload.warningCount ?? 0);
+    elements.workbook_schema_version.textContent = `${payload.schemaVersion ?? "—"} (app ${payload.applicationSchemaVersion ?? "—"})`;
+    renderWorkbookWarnings(payload.warnings ?? []);
+    if (payload.operation === "restored") {
+      state.workbookSelected = false;
+      elements.workbook_selection.textContent = "Previous copy restored. Choose a source spreadsheet before the next update.";
+    }
+    if (payload.resetLocation) resetLocationUi();
+    updateWorkbookControls();
     renderTowerCoverage();
     maybeFinishFirstSetup();
+  }
+
+  function setWorkbookBusy(busy) {
+    state.workbookBusy = busy;
+    updateWorkbookControls();
+  }
+
+  function updateWorkbookControls() {
+    elements.choose_workbook.disabled = state.workbookBusy;
+    elements.activate_workbook.disabled = state.workbookBusy || !state.workbookSelected;
+    elements.reload_workbook.disabled = state.workbookBusy || !state.workbookConfigured;
+    elements.open_current_workbook.disabled = state.workbookBusy || !state.workbookConfigured;
+    elements.restore_previous_workbook.disabled = state.workbookBusy || !state.canRestorePrevious;
+  }
+
+  function renderWorkbookWarnings(warnings) {
+    elements.workbook_warnings.replaceChildren(...warnings.map(warning => node("li", {}, warning)));
+    elements.workbook_warnings.hidden = warnings.length === 0;
+  }
+
+  function showWorkbookIssues(errors, warnings) {
+    const message = [...errors, ...warnings, ...(state.workbookConfigured ? ["The current working copy remains active."] : [])].join(" ");
+    setStatus(elements.workbook_result, message, "error");
+  }
+
+  function formatDateTime(value) {
+    if (!value) return "Unknown";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "Unknown" : date.toLocaleString();
   }
 
   async function configureGoogle(apiKey) {
@@ -688,9 +776,13 @@
   }
 
   function clearLocation() {
+    post("clearLocation");
+    resetLocationUi();
+  }
+
+  function resetLocationUi() {
     state.revision += 1;
     closeProfile();
-    post("clearLocation");
     elements.latitude.value = "";
     elements.longitude.value = "";
     elements.clear_location.disabled = true;
@@ -1030,6 +1122,14 @@
   });
   elements.clear_key.addEventListener("click", () => post("clearGoogleKey"));
   elements.choose_workbook.addEventListener("click", () => post("chooseWorkbook"));
+  elements.activate_workbook.addEventListener("click", () => post("activateWorkbook"));
+  elements.reload_workbook.addEventListener("click", () => post("reloadWorkbook"));
+  elements.open_current_workbook.addEventListener("click", () => post("openCurrentWorkbook"));
+  elements.restore_previous_workbook.addEventListener("click", () => {
+    if (globalThis.confirm("Restore the previous validated workbook? The current copy will remain available as the previous version.")) {
+      post("restorePreviousWorkbook");
+    }
+  });
   elements.check_coordinates.addEventListener("click", () => selectLocation({ lat: elements.latitude.value, lng: elements.longitude.value }, "coordinates", null));
   [elements.latitude, elements.longitude].forEach(input => input.addEventListener("keydown", event => {
     if (event.key === "Enter") elements.check_coordinates.click();

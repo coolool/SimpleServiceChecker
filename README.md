@@ -4,7 +4,7 @@ Starling Service Checker is a low-maintenance Windows desktop application for sa
 
 ## Status
 
-Packages 1 through 4 and the requested Package 4 visual and dropped-pin corrections are accepted. An owner-approved satellite-map, map-view, Street View, and Starling-branding follow-up is in review before Package 5 begins.
+Packages 1 through 4 and the map, Street View, Geocoding, legend, icon, and branding follow-up are accepted. Package 5 spreadsheet management and recovery is implemented and awaiting owner acceptance before installer work begins.
 
 ## Product boundaries
 
@@ -36,6 +36,7 @@ dotnet publish src\SimpleServiceChecker.App\SimpleServiceChecker.App.csproj --co
 The application does not require Excel or a separately installed .NET runtime. It currently requires the Microsoft Edge WebView2 Evergreen Runtime; installer detection and bootstrap belong to Package 6.
 
 See [Package 4 terrain checklist](docs/PACKAGE_4_TERRAIN.md) for the accepted terrain and Fresnel implementation.
+See [Package 5 spreadsheet-management checklist](docs/PACKAGE_5_SPREADSHEET_MANAGEMENT.md) for the current review build and recovery evidence.
 
 ## Repository safety
 

@@ -20,6 +20,10 @@ public static class AppPaths
 
     public static string CurrentManifestFile { get; } = Path.Combine(CoverageDirectory, "current-manifest.json");
 
+    public static string PreviousWorkbookFile { get; } = Path.Combine(CoverageDirectory, "previous.xlsx");
+
+    public static string PreviousManifestFile { get; } = Path.Combine(CoverageDirectory, "previous-manifest.json");
+
     public static void EnsureCreated()
     {
         _ = Directory.CreateDirectory(ConfigDirectory);

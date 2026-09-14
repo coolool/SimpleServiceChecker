@@ -52,7 +52,24 @@ button:hover:not(:disabled) { background: var(--coffee-dark); }
 .link-button { padding: 3px 0; color: var(--blue); background: transparent; font-size: 12px; }
 .link-button:hover:not(:disabled) { color: #224d69; background: transparent; text-decoration: underline; }
 .wide-button { width: 100%; margin-top: 12px; }
+.primary-action { background: var(--blue); }
+.primary-action:hover:not(:disabled) { background: #245470; }
 .input-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+
+.workbook-selection { margin-top: 8px; overflow-wrap: anywhere; color: #705f52; font-size: 11px; line-height: 1.35; }
+.workbook-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 9px; }
+.workbook-actions button { min-height: 36px; padding: 7px 8px; font-size: 11px; line-height: 1.2; }
+.workbook-actions button:nth-child(2) { grid-column: span 2; order: -1; }
+.workbook-current { display: grid; gap: 5px; margin-top: 10px; padding: 10px; background: #f3ece2; border: 1px solid rgba(93, 67, 51, .12); border-radius: 8px; }
+.workbook-current[hidden] { display: none; }
+.workbook-current > strong { font-size: 12px; }
+.workbook-file { overflow-wrap: anywhere; color: #5f4e42; font-size: 11px; }
+.workbook-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin: 3px 0 0; }
+.workbook-facts div { min-width: 0; padding: 5px 6px; background: rgba(255, 250, 242, .85); border-radius: 5px; }
+.workbook-facts dt { color: #7b6859; font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.workbook-facts dd { margin: 2px 0 0; overflow-wrap: anywhere; font-size: 10px; font-weight: 700; }
+.workbook-warnings { max-height: 112px; margin: 3px 0 0; padding-left: 18px; overflow-y: auto; color: #75510f; font-size: 10px; line-height: 1.4; }
+.workbook-warnings[hidden] { display: none; }
 
 .place-control { min-height: 46px; margin-top: 12px; }
 .place-control gmp-place-autocomplete { display: block; width: 100%; min-height: 46px; color: #34271f; color-scheme: light; background: #fff; border: 1px solid #bea58e; border-radius: 8px; }
