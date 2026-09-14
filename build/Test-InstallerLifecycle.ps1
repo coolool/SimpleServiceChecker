@@ -9,7 +9,10 @@ param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$PreviousVersion,
     [switch]$VerifySignatures,
-    [string]$SignToolPath
+    [string]$SignToolPath,
+    [ValidatePattern('^[0-9A-Fa-f]{40}$')]
+    [string]$ExpectedSignerThumbprint,
+    [switch]$AllowUntrustedTestCertificate
 )
 
 $ErrorActionPreference = 'Stop'
@@ -40,6 +43,23 @@ function Assert-InstalledVersion {
 
 function Assert-Signed {
     param([string]$Path)
+
+    if ($AllowUntrustedTestCertificate) {
+        if ([string]::IsNullOrWhiteSpace($ExpectedSignerThumbprint)) {
+            throw 'ExpectedSignerThumbprint is required for untrusted test-certificate verification.'
+        }
+        $signature = Get-AuthenticodeSignature -LiteralPath $Path
+        if ($null -eq $signature.SignerCertificate -or
+            $signature.SignerCertificate.Thumbprint -ne $ExpectedSignerThumbprint -or
+            $signature.Status -in @(
+                [Management.Automation.SignatureStatus]::NotSigned,
+                [Management.Automation.SignatureStatus]::HashMismatch,
+                [Management.Automation.SignatureStatus]::NotSupportedFileFormat,
+                [Management.Automation.SignatureStatus]::Incompatible)) {
+            throw "Ephemeral Authenticode verification failed for $Path with status $($signature.Status)."
+        }
+        return
+    }
 
     if ([string]::IsNullOrWhiteSpace($SignToolPath)) {
         throw 'SignToolPath is required when VerifySignatures is set.'

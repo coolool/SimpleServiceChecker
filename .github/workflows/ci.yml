@@ -76,8 +76,6 @@ jobs:
             -HashAlgorithm SHA256 `
             -NotAfter (Get-Date).AddDays(1)
           Export-Certificate -Cert $certificate -FilePath $certificatePath | Out-Null
-          & certutil.exe -user -addstore -f Root $certificatePath
-          if ($LASTEXITCODE -ne 0) { throw 'Could not trust the ephemeral CI signing certificate.' }
 
           $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -File |
             Sort-Object FullName -Descending |
@@ -98,7 +96,7 @@ jobs:
             -SkipRestore `
             -SignToolPath $env:SIGNTOOL_PATH `
             -SigningCertificateThumbprint $env:CI_SIGNING_CERT_SHA1 `
-            -AllowUntimestampedTestSigning
+            -AllowEphemeralTestSigning
 
       - name: Verify signed installer lifecycle
         timeout-minutes: 3
@@ -108,16 +106,16 @@ jobs:
             -CurrentInstaller artifacts/installer-signed-test/StarlingServiceChecker-Setup-1.0.0.exe `
             -CurrentVersion 1.0.0 `
             -VerifySignatures `
-            -SignToolPath $env:SIGNTOOL_PATH
+            -SignToolPath $env:SIGNTOOL_PATH `
+            -ExpectedSignerThumbprint $env:CI_SIGNING_CERT_SHA1 `
+            -AllowUntrustedTestCertificate
 
       - name: Remove ephemeral CI signing certificate
         if: always()
         shell: pwsh
         run: |
           if ($env:CI_SIGNING_CERT_SHA1 -match '^[0-9A-Fa-f]{40}$') {
-            foreach ($store in @('My', 'Root')) {
-              & certutil.exe -user -delstore $store $env:CI_SIGNING_CERT_SHA1
-            }
+            & certutil.exe -user -delstore My $env:CI_SIGNING_CERT_SHA1
           }
           if (-not [string]::IsNullOrWhiteSpace($env:CI_SIGNING_CERT_PATH)) {
             Remove-Item -LiteralPath $env:CI_SIGNING_CERT_PATH -Force -ErrorAction SilentlyContinue

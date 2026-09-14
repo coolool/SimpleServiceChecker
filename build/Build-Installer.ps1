@@ -13,7 +13,7 @@ param(
     [string]$SigningCertificateThumbprint,
     [ValidatePattern('^https://')]
     [string]$TimestampUrl,
-    [switch]$AllowUntimestampedTestSigning
+    [switch]$AllowEphemeralTestSigning
 )
 
 $ErrorActionPreference = 'Stop'
@@ -102,6 +102,26 @@ function Invoke-Sign {
     }
     $arguments += @('/d', 'Starling Service Checker', $Path)
     Invoke-Checked $SignToolPath $arguments
+    Assert-Signed $Path
+}
+
+function Assert-Signed {
+    param([string]$Path)
+
+    if ($AllowEphemeralTestSigning) {
+        $signature = Get-AuthenticodeSignature -LiteralPath $Path
+        if ($null -eq $signature.SignerCertificate -or
+            $signature.SignerCertificate.Thumbprint -ne $SigningCertificateThumbprint -or
+            $signature.Status -in @(
+                [Management.Automation.SignatureStatus]::NotSigned,
+                [Management.Automation.SignatureStatus]::HashMismatch,
+                [Management.Automation.SignatureStatus]::NotSupportedFileFormat,
+                [Management.Automation.SignatureStatus]::Incompatible)) {
+            throw "Ephemeral Authenticode verification failed for $Path with status $($signature.Status)."
+        }
+        return
+    }
+
     Invoke-Checked $SignToolPath @('verify', '/pa', '/all', $Path)
 }
 
@@ -118,11 +138,11 @@ $signingRequested = $hasSignTool -and $hasCertificate
 if (-not [string]::IsNullOrWhiteSpace($TimestampUrl) -and -not $signingRequested) {
     throw 'TimestampUrl can only be used with SignToolPath and SigningCertificateThumbprint.'
 }
-if ($signingRequested -and [string]::IsNullOrWhiteSpace($TimestampUrl) -and -not $AllowUntimestampedTestSigning) {
-    throw 'TimestampUrl is required for signed builds. Use AllowUntimestampedTestSigning only with an ephemeral CI test certificate.'
+if ($signingRequested -and [string]::IsNullOrWhiteSpace($TimestampUrl) -and -not $AllowEphemeralTestSigning) {
+    throw 'TimestampUrl is required for signed builds. Use AllowEphemeralTestSigning only with an ephemeral CI test certificate.'
 }
-if ($AllowUntimestampedTestSigning -and (-not $signingRequested -or -not [string]::IsNullOrWhiteSpace($TimestampUrl))) {
-    throw 'AllowUntimestampedTestSigning requires signing credentials and no TimestampUrl.'
+if ($AllowEphemeralTestSigning -and (-not $signingRequested -or -not [string]::IsNullOrWhiteSpace($TimestampUrl))) {
+    throw 'AllowEphemeralTestSigning requires signing credentials and no TimestampUrl.'
 }
 if ($signingRequested -and -not (Test-Path -LiteralPath $SignToolPath -PathType Leaf)) {
     throw "SignToolPath was not found: $SignToolPath"
@@ -200,7 +220,7 @@ try {
         throw "Installer output was not created: $installerPath"
     }
     if ($signingRequested) {
-        Invoke-Checked $SignToolPath @('verify', '/pa', '/all', $installerPath)
+        Assert-Signed $installerPath
     }
 
     $installerHash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
