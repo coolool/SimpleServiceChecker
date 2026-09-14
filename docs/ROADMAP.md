@@ -14,15 +14,23 @@
 - [x] Owner approves `FIRST_RELEASE_SPEC.md`.
 - [x] Owner accepts WPF/.NET and WebView2 as the technical direction.
 - [x] Owner selects a company-controlled SharePoint or OneDrive installer link.
-- [ ] Owner accepts `BUILD_PLAN.md` and explicitly starts Phase 1 implementation.
+- [x] Owner accepts `BUILD_PLAN.md` and explicitly starts Phase 1 implementation (September 14, 2026).
 
 ## Phase 1 - Technical proof
 
-- [ ] Create a minimal Windows shell with the selected embedded web renderer.
+- [x] Create a minimal Windows shell with the selected embedded web renderer (September 14, 2026).
 - [ ] Verify Google Maps, Places, and Elevation with a company-owned restricted test key.
 - [ ] Verify the stable local application origin used by Google key restrictions.
-- [ ] Import and validate the supplied workbook without Excel installed.
+- [x] Import and validate the supplied workbook without Excel installed (September 14, 2026).
 - [ ] Confirm map and terrain rendering on representative Windows computers.
+
+### Package 1 evidence
+
+- Release build: succeeded with zero warnings and zero errors on Windows 10 x64.
+- Automated tests: 12 passed, including bridge allow-listing, stable HTTPS origin, per-user key encryption, malformed-workbook recovery, and synthetic workbook validation.
+- Supplied workbook: validated read-only outside the repository with 224 tower rows and 16 fibre rows.
+- Packaging: unsigned self-contained `win-x64` proof published successfully; .NET is included and WebView2 Evergreen remains an external runtime until Package 6.
+- Live restricted-key proof, visual comparison, Windows 11 review, and owner acceptance remain pending.
 
 No production installer work should begin until this proof is accepted.
 

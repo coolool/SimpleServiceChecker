@@ -1,6 +1,6 @@
 # First-release specification
 
-Status: Approved on September 11, 2026. Implementation has not started.
+Status: Approved on September 11, 2026. Package 1 implementation started on September 14, 2026.
 
 ## 1. Outcome
 

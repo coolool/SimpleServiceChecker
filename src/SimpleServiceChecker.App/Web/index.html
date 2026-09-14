@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; connect-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.google.com; frame-src https://*.google.com; font-src 'self' https://fonts.gstatic.com; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Simple Service Checker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <aside class="sidebar" aria-label="Service checker controls">
+      <header class="brand">
+        <span class="eyebrow">Technical proof</span>
+        <h1>Simple Service Checker</h1>
+        <p>Fast local fibre and wireless planning for sales calls.</p>
+      </header>
+
+      <section class="panel" aria-labelledby="google-heading">
+        <div class="panel-heading">
+          <h2 id="google-heading">Google setup</h2>
+          <span id="key-badge" class="badge neutral">Not configured</span>
+        </div>
+        <label for="google-key">Company API key</label>
+        <div class="input-row">
+          <input id="google-key" type="password" autocomplete="off" spellcheck="false" placeholder="Enter locally">
+          <button id="save-key" type="button">Save &amp; test</button>
+        </div>
+        <p class="privacy-note">Encrypted for this Windows user. Never included in the installer or repository.</p>
+        <button id="clear-key" class="link-button" type="button">Remove saved key</button>
+      </section>
+
+      <section class="panel" aria-labelledby="workbook-heading">
+        <div class="panel-heading">
+          <h2 id="workbook-heading">Coverage workbook</h2>
+          <span id="workbook-badge" class="badge neutral">Not checked</span>
+        </div>
+        <button id="choose-workbook" class="wide-button" type="button">Choose spreadsheet</button>
+        <div id="workbook-result" class="result muted" aria-live="polite">Choose the two-tab workbook to verify its headers and record counts.</div>
+      </section>
+
+      <section class="panel" aria-labelledby="proof-heading">
+        <h2 id="proof-heading">Provider proof</h2>
+        <ul class="proof-list">
+          <li><span id="map-proof" class="proof-dot"></span>Maps JavaScript</li>
+          <li><span id="places-proof" class="proof-dot"></span>Places (New)</li>
+          <li><span id="elevation-proof" class="proof-dot"></span>Elevation</li>
+        </ul>
+        <p id="proof-message" class="result muted" aria-live="polite">Save the restricted company key to run the live proof.</p>
+      </section>
+
+      <footer>
+        <span id="origin-label">Secure local application origin</span>
+        <span>Wireless results are planning candidates, not installation guarantees.</span>
+      </footer>
+    </aside>
+
+    <section class="workspace" aria-label="Map and terrain proof">
+      <div id="map" role="application" aria-label="Synthetic Google map proof">
+        <div class="map-placeholder">
+          <strong>Google Maps proof</strong>
+          <span>Configure the company key to load the map.</span>
+        </div>
+      </div>
+      <div class="map-toolbar">
+        <div id="place-control" class="place-control" aria-label="Google place search proof"></div>
+        <span class="synthetic-label">Synthetic demonstration data</span>
+      </div>
+      <section class="chart-card" aria-labelledby="chart-heading">
+        <div>
+          <span class="eyebrow">Wireless candidate</span>
+          <h2 id="chart-heading">Synthetic terrain and clearance profile</h2>
+        </div>
+        <div class="legend" aria-label="Chart legend">
+          <span><i class="terrain"></i>Terrain</span>
+          <span><i class="line-of-sight"></i>Line of sight</span>
+          <span><i class="fresnel"></i>First Fresnel zone</span>
+        </div>
+        <div class="chart-wrap"><canvas id="terrain-chart"></canvas></div>
+      </section>
+    </section>
+  </main>
+
+  <script src="vendor/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

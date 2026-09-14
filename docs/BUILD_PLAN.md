@@ -1,6 +1,6 @@
 # Build plan
 
-Status: Ready for owner review. This document authorizes no application implementation by itself.
+Status: Approved for implementation on September 14, 2026.
 
 ## 1. Build objective
 
@@ -308,7 +308,7 @@ Version 1 is complete only when:
 
 ## 10. Start condition
 
-No application code has been created. Implementation begins only after the owner explicitly accepts this build plan and asks to start Package 1.
+The owner explicitly accepted this build plan and started Package 1 on September 14, 2026. Later package gates and owner-acceptance requirements remain in force.
 
 ## 11. Technical references
 
