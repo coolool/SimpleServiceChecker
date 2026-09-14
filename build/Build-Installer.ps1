@@ -215,15 +215,13 @@ try {
         "/DWebView2Bootstrapper=$bootstrapperPath",
         "/DUpdateLocationUrl=$UpdateLocationUrl")
     if ($signingRequested) {
-        $timestampArguments = if ([string]::IsNullOrWhiteSpace($TimestampUrl)) {
-            ''
-        }
-        else {
-            '/td SHA256 /tr "{0}"' -f $TimestampUrl
-        }
-        $signCommand = '"{0}" sign /sha1 {1} /fd SHA256 {2} /d $qStarling Service Checker$q $f' -f $SignToolPath, $SigningCertificateThumbprint, $timestampArguments
-        $innoArguments += "/Sstarling=$signCommand"
+        $innoArguments += '-sstarling=$p'
         $innoArguments += '/DSignToolName=starling'
+        $innoArguments += "/DSignToolPath=$SignToolPath"
+        $innoArguments += "/DSigningCertificateThumbprint=$SigningCertificateThumbprint"
+        if (-not [string]::IsNullOrWhiteSpace($TimestampUrl)) {
+            $innoArguments += "/DSignTimestampUrl=$TimestampUrl"
+        }
     }
     $innoArguments += 'installer\StarlingServiceChecker.iss'
     Invoke-Checked $innoCompiler $innoArguments
