@@ -130,6 +130,7 @@ footer { display: grid; gap: 5px; margin-top: auto; padding-top: 4px; color: #75
 .legend-dot { width: 11px; height: 11px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, .3); }
 .legend-dot.customer { background: var(--blue); }
 .legend-dot.tower { background: var(--rust); }
+.legend-dot.spreadsheet-issue { background: #77706a; }
 .legend-ring { width: 14px; height: 14px; border: 2px solid rgba(183, 94, 61, .65); border-radius: 50%; background: rgba(183, 94, 61, .08); }
 .legend-line { width: 17px; height: 3px; border-radius: 2px; background: var(--coffee-dark); }
 .clearance-legend[hidden] { display: none; }

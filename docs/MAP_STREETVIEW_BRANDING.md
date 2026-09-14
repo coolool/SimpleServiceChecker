@@ -7,6 +7,7 @@
 - The map starts in satellite view.
 - The map-type control allows roadmap, satellite, hybrid, and terrain views.
 - The tower-load status appears directly below the Coverage map legend in the upper-right overlay.
+- The Coverage map legend identifies grey tower markers as spreadsheet issues; these are rows with zero tower height or zero tower range that cannot produce a wireless candidate.
 - Selecting a customer location checks for official Google Street View imagery within 200 metres.
 - The Street View action appears at the bottom of the Customer Location card only when imagery is available.
 - Street View opens over the coverage map, initially faces the customer location, and can be closed to return to coverage.
