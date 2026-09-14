@@ -16,6 +16,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Scan tracked repository for prohibited data
+        shell: pwsh
+        run: ./build/Test-RepositorySafety.ps1
+
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:
@@ -35,12 +39,59 @@ jobs:
       - name: Test
         run: dotnet test SimpleServiceChecker.sln --configuration Release --no-build
 
-      - name: Publish self-contained Windows application
-        run: dotnet publish src/SimpleServiceChecker.App/SimpleServiceChecker.App.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore --output artifacts/proof
+      - name: Build previous-version installer fixture
+        shell: pwsh
+        run: |
+          ./build/Build-Installer.ps1 `
+            -Version 0.9.0 `
+            -PublishDirectory artifacts/publish-previous `
+            -OutputDirectory artifacts/installer-previous `
+            -SourceRepository $env:GITHUB_REPOSITORY `
+            -SourceCommit $env:GITHUB_SHA `
+            -SkipRestore
 
-      - name: Upload Windows application build
-        uses: actions/upload-artifact@v4
+      - name: Build current per-user installer
+        shell: pwsh
+        run: |
+          ./build/Build-Installer.ps1 `
+            -Version 1.0.0 `
+            -PublishDirectory artifacts/publish-current `
+            -OutputDirectory artifacts/installer `
+            -SourceRepository $env:GITHUB_REPOSITORY `
+            -SourceCommit $env:GITHUB_SHA `
+            -SkipRestore
+
+      - name: Verify unsigned release artifacts
+        shell: pwsh
+        run: |
+          ./build/Test-ReleaseArtifacts.ps1 `
+            -ArtifactDirectory artifacts/installer-previous `
+            -Version 0.9.0 `
+            -ExpectedUpdateLocationUrl https://github.com/coolool/StarlingServiceChecker-Releases/releases/latest `
+            -ExpectedSourceRepository $env:GITHUB_REPOSITORY `
+            -ExpectedSourceCommit $env:GITHUB_SHA
+          ./build/Test-ReleaseArtifacts.ps1 `
+            -ArtifactDirectory artifacts/installer `
+            -Version 1.0.0 `
+            -ExpectedUpdateLocationUrl https://github.com/coolool/StarlingServiceChecker-Releases/releases/latest `
+            -ExpectedSourceRepository $env:GITHUB_REPOSITORY `
+            -ExpectedSourceCommit $env:GITHUB_SHA
+
+      - name: Test installer lifecycle
+        shell: pwsh
+        run: |
+          ./build/Test-InstallerLifecycle.ps1 `
+            -PreviousInstaller artifacts/installer-previous/StarlingServiceChecker-Setup-0.9.0.exe `
+            -PreviousVersion 0.9.0 `
+            -CurrentInstaller artifacts/installer/StarlingServiceChecker-Setup-1.0.0.exe `
+            -CurrentVersion 1.0.0
+
+      - name: Upload Windows installer proof
+        uses: actions/upload-artifact@v6
         with:
-          name: StarlingServiceChecker-win-x64
-          path: artifacts/proof
+          name: StarlingServiceChecker-unsigned-installer-proof
+          path: |
+            artifacts/installer/StarlingServiceChecker-Setup-1.0.0.exe
+            artifacts/installer/StarlingServiceChecker-Setup-1.0.0.exe.sha256
+            artifacts/installer/StarlingServiceChecker-1.0.0-release.json
           if-no-files-found: error

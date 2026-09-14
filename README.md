@@ -4,7 +4,7 @@ Starling Service Checker is a low-maintenance Windows desktop application for sa
 
 ## Status
 
-Packages 1 through 5 and the map, Street View, Geocoding, legend, icon, and branding follow-up are accepted. Package 6 installer and release work is next.
+Packages 1 through 5 and the map, Street View, Geocoding, legend, icon, branding, and terrain-minimize follow-ups are accepted. Package 6 uses an intentionally unsigned installer published through the separate public binary-only `coolool/StarlingServiceChecker-Releases` repository. Clean-machine testing and owner acceptance remain open.
 
 ## Product boundaries
 
@@ -33,10 +33,17 @@ Create the unsigned, self-contained Windows application build with:
 dotnet publish src\SimpleServiceChecker.App\SimpleServiceChecker.App.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore --output artifacts\app
 ```
 
-The application does not require Excel or a separately installed .NET runtime. It currently requires the Microsoft Edge WebView2 Evergreen Runtime; installer detection and bootstrap belong to Package 6.
+Create an unsigned per-user installer with Inno Setup 6 or 7 installed and internet access for the Microsoft WebView2 bootstrapper:
+
+```powershell
+.\build\Build-Installer.ps1 -Version 1.0.0
+```
+
+The application does not require Excel or a separately installed .NET runtime. The installer detects Microsoft Edge WebView2 Evergreen Runtime and silently runs Microsoft's signed online bootstrapper only when the runtime is missing.
 
 See [Package 4 terrain checklist](docs/PACKAGE_4_TERRAIN.md) for the accepted terrain and Fresnel implementation.
 See [Package 5 spreadsheet-management checklist](docs/PACKAGE_5_SPREADSHEET_MANAGEMENT.md) for the current review build and recovery evidence.
+See [Package 6 installer and release checklist](docs/PACKAGE_6_INSTALLER_RELEASE.md) and the [salesperson installation guide](docs/SALESPERSON_INSTALLATION.md).
 
 ## Repository safety
 

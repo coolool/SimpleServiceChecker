@@ -4,7 +4,7 @@ Status: Approved for implementation on September 14, 2026.
 
 ## 1. Build objective
 
-Deliver a signed, self-contained Windows 10/11 x64 application that lets a salesperson check fibre and fixed-wireless availability from a locally selected workbook during a customer call.
+Deliver a self-contained Windows 10/11 x64 application that lets a salesperson check fibre and fixed-wireless availability from a locally selected workbook during a customer call.
 
 The application must preserve the recognizable Service Checker map, warm sidebar, result cards, legend, path colours, and terrain-chart appearance. It removes databases, backends, customer and ticket functions, logging, telemetry, fibre map geometry, and automatic synchronization.
 
@@ -18,7 +18,7 @@ The application must preserve the recognizable Service Checker map, warm sidebar
 - Google Maps, Places, Elevation, and Geocoding use a company-owned restricted key encrypted for the current Windows user.
 - Google Maps defaults to satellite imagery, allows the four standard map types, and offers Street View from the customer-location card only when nearby official imagery is available.
 - Wireless plots include first Fresnel-zone clearance with defaults of 5.8 GHz, 60%, and effective-earth-radius factor 4/3.
-- A signed per-user installer is distributed through a company-controlled SharePoint or OneDrive link.
+- An intentionally unsigned per-user installer is distributed through the public, binary-only `coolool/StarlingServiceChecker-Releases` repository; the source repository remains private.
 - Updates are manual. `Check for Updates` opens the fixed company download location.
 
 ## 3. Source baselines
@@ -220,7 +220,7 @@ The application reads the selected source only during validation or an explicit 
 
 Gate: invalid or interrupted replacement attempts cannot displace the active workbook, and restoration works after an application restart.
 
-### Package 6: Installer, signing, and release automation
+### Package 6: Installer and release automation
 
 Build:
 
@@ -229,10 +229,10 @@ Build:
 - Start menu entry, optional desktop shortcut, upgrade-over-existing, and clean uninstall;
 - WebView2 Evergreen detection and silent per-user bootstrap when missing;
 - clear failure guidance if the WebView2 bootstrap cannot complete;
-- Authenticode signing for application and installer binaries;
-- GitHub Actions build, test, publish, sign, checksum, and draft-release workflow;
-- protected approval before signing and publishing;
-- `Check for Updates` opening the company SharePoint or OneDrive location; and
+- a fail-closed unsigned-artifact policy matching the owner's explicit release decision;
+- GitHub Actions build, test, publish, checksum, provenance, and public draft-release workflow;
+- manual owner initiation before creating or updating a public draft release;
+- `Check for Updates` opening the selected GitHub Releases page; and
 - release checklist and administrator-free salesperson instructions.
 
 The normal online installer uses the small WebView2 bootstrapper. Keep an offline installer variant out of version 1 unless a real deployment environment requires it, because bundling the fixed runtime would substantially increase package size and servicing work.
@@ -255,7 +255,7 @@ Run the complete acceptance matrix using synthetic data plus the supplied workbo
 - clean install, upgrade, uninstall, and remaining local-data disclosure; and
 - repository and release-artifact scan for keys, real workbooks, customer data, logs, and searched locations.
 
-Gate: owner signs off on the release candidate. Publish the signed installer to the company SharePoint or OneDrive location only after this gate.
+Gate: owner signs off on the release candidate. Publish the installer to the selected GitHub Releases page only after this gate.
 
 ## 6. Continuous integration
 
@@ -293,7 +293,7 @@ Version tags create draft GitHub releases. General-release publication requires 
 | Replacement workbook is malformed | Complete validation, temporary copy, hash, manifest, and atomic activation | Packages 2 and 5 |
 | Fibre address wording produces false assurance | Structured address matching and explicit `Not listed` wording | Packages 2 and 3 |
 | Radius or terrain is mistaken for guaranteed coverage | Candidate language and visible planning disclaimer | Packages 3 and 4 |
-| Unsigned installer creates user distrust | Sign binaries and verify on clean machines before distribution | Package 6 |
+| Unsigned installer triggers Windows warnings or policy blocks | Publish only from the official public repository, provide checksums and provenance, explain SmartScreen safely, and test on clean machines | Package 6 |
 | Real data or keys enter Git | Synthetic fixtures, ignore rules, CI scans, and release checklist | Every package |
 
 ## 9. Completion definition
@@ -303,7 +303,7 @@ Version 1 is complete only when:
 - every package gate has recorded evidence;
 - all automated and manual acceptance tests pass;
 - the owner approves the visual comparison and release candidate;
-- the installer is signed and tested on clean Windows 10 and 11 x64 systems;
+- the intentionally unsigned installer is tested on clean Windows 10 and 11 x64 systems, including its warning experience;
 - the installer is available through the agreed company link;
 - a non-developer can install, configure, check a location, replace the workbook, and uninstall using the supplied instructions; and
 - the repository and installed application contain no database, backend, real coverage workbook, shared Google key, customer data, logs, telemetry, fibre overlay, or external regulatory-data layer.

@@ -1,0 +1,137 @@
+name: Public unsigned draft release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing annotated version tag to build, such as v1.0.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-draft:
+    runs-on: windows-latest
+    env:
+      REQUESTED_TAG: ${{ inputs.tag }}
+      RELEASE_REPOSITORY: coolool/StarlingServiceChecker-Releases
+      UPDATE_LOCATION_URL: https://github.com/coolool/StarlingServiceChecker-Releases/releases/latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag }}
+
+      - name: Resolve and validate release version
+        id: release
+        shell: pwsh
+        run: |
+          $tag = $env:REQUESTED_TAG
+          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+            throw 'Release tag must use vMAJOR.MINOR.PATCH.'
+          }
+          git rev-parse --verify "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) { throw "Tag $tag does not exist." }
+          $tagType = git cat-file -t "refs/tags/$tag"
+          if ($tagType -ne 'tag') { throw "Release tag $tag must be annotated." }
+          git fetch origin main --no-tags
+          git merge-base --is-ancestor "$tag^{commit}" refs/remotes/origin/main
+          if ($LASTEXITCODE -ne 0) { throw "Release tag $tag is not on the main branch." }
+          $tagCommit = git rev-parse "$tag^{commit}"
+          $headCommit = git rev-parse HEAD
+          if ($tagCommit -ne $headCommit) { throw "Checked-out commit does not match release tag $tag." }
+          "RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "RELEASE_VERSION=$($tag.Substring(1))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "SOURCE_COMMIT=$tagCommit" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "version=$($tag.Substring(1))" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+
+      - name: Restore, build, and test
+        shell: pwsh
+        run: |
+          ./build/Test-RepositorySafety.ps1
+          dotnet restore SimpleServiceChecker.sln --locked-mode
+          dotnet build SimpleServiceChecker.sln --configuration Release --no-restore
+          node --check src/SimpleServiceChecker.App/Web/app.js
+          dotnet test SimpleServiceChecker.sln --configuration Release --no-build
+
+      - name: Build unsigned installer
+        shell: pwsh
+        run: |
+          ./build/Build-Installer.ps1 `
+            -Version $env:RELEASE_VERSION `
+            -UpdateLocationUrl $env:UPDATE_LOCATION_URL `
+            -SourceRepository $env:GITHUB_REPOSITORY `
+            -SourceCommit $env:SOURCE_COMMIT `
+            -SkipRestore
+
+      - name: Verify install, upgrade, and uninstall
+        shell: pwsh
+        run: |
+          ./build/Test-InstallerLifecycle.ps1 `
+            -CurrentInstaller "artifacts/installer/StarlingServiceChecker-Setup-$env:RELEASE_VERSION.exe" `
+            -CurrentVersion $env:RELEASE_VERSION
+
+      - name: Verify public release artifacts
+        shell: pwsh
+        run: |
+          ./build/Test-ReleaseArtifacts.ps1 `
+            -ArtifactDirectory artifacts/installer `
+            -Version $env:RELEASE_VERSION `
+            -ExpectedUpdateLocationUrl $env:UPDATE_LOCATION_URL `
+            -ExpectedSourceRepository $env:GITHUB_REPOSITORY `
+            -ExpectedSourceCommit $env:SOURCE_COMMIT `
+            -RequireGitHubReleasesUpdateLocation
+
+      - name: Upload private workflow evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: StarlingServiceChecker-${{ steps.release.outputs.version }}-unsigned
+          path: artifacts/installer
+          if-no-files-found: error
+
+      - name: Create or update public draft release
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:GH_TOKEN)) {
+            throw 'Configure PUBLIC_RELEASE_TOKEN as a fine-grained token with Contents read/write access only to the public release repository.'
+          }
+          $assets = @(
+            "artifacts/installer/StarlingServiceChecker-Setup-$env:RELEASE_VERSION.exe",
+            "artifacts/installer/StarlingServiceChecker-Setup-$env:RELEASE_VERSION.exe.sha256",
+            "artifacts/installer/StarlingServiceChecker-$env:RELEASE_VERSION-release.json"
+          )
+          $notes = @"
+          Starling Service Checker $env:RELEASE_VERSION
+
+          This Windows installer is intentionally unsigned. Windows may show an Unknown publisher or Microsoft Defender SmartScreen warning. Download only from this official repository. If your organization's policy blocks unsigned applications, contact your IT team and do not disable security controls.
+
+          Source repository: $env:GITHUB_REPOSITORY
+          Source commit: $env:SOURCE_COMMIT
+          "@
+          $existingReleaseJson = gh release view $env:RELEASE_TAG --repo $env:RELEASE_REPOSITORY --json isDraft 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $existingRelease = $existingReleaseJson | ConvertFrom-Json
+            if (-not $existingRelease.isDraft) {
+              throw "Release $env:RELEASE_TAG is already published. Refusing to replace its assets."
+            }
+            gh release upload $env:RELEASE_TAG @assets --repo $env:RELEASE_REPOSITORY --clobber
+            if ($LASTEXITCODE -ne 0) { throw 'Could not update public draft release assets.' }
+            gh release edit $env:RELEASE_TAG --repo $env:RELEASE_REPOSITORY --title "Starling Service Checker $env:RELEASE_VERSION" --notes $notes
+            if ($LASTEXITCODE -ne 0) { throw 'Could not update public draft release notes.' }
+          }
+          else {
+            gh release create $env:RELEASE_TAG @assets --repo $env:RELEASE_REPOSITORY --target main --draft --title "Starling Service Checker $env:RELEASE_VERSION" --notes $notes
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create the public draft release.' }
+          }

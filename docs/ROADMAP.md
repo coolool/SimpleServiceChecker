@@ -13,7 +13,9 @@
 - [x] Defer external spectrum and regulatory-data imports or map layers beyond version 1.
 - [x] Owner approves `FIRST_RELEASE_SPEC.md`.
 - [x] Owner accepts WPF/.NET and WebView2 as the technical direction.
-- [x] Owner selects a company-controlled SharePoint or OneDrive installer link.
+- [x] Owner selects GitHub Releases as the update and installer-download channel (September 14, 2026).
+- [x] Owner selects a separate public, binary-only `coolool/StarlingServiceChecker-Releases` repository while keeping source private (September 14, 2026).
+- [x] Owner explicitly waives Authenticode signing and accepts the resulting Windows warning and managed-device blocking risk (September 14, 2026).
 - [x] Owner accepts `BUILD_PLAN.md` and explicitly starts Phase 1 implementation (September 14, 2026).
 
 ## Phase 1 - Technical proof
@@ -155,12 +157,31 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 
 ## Phase 4 - Installer and release
 
-- [ ] Produce a per-user Windows installer with no administrator requirement where possible.
-- [ ] Detect or bootstrap the required embedded browser runtime.
-- [ ] Ensure API keys, workbooks, and local data are excluded from packages and Git.
-- [ ] Test install, upgrade, rollback, and uninstall on clean Windows systems.
-- [ ] Publish signed installer artifacts for manual download and add a `Check for updates` link to the chosen download page.
-- [ ] Code-sign release binaries before general distribution.
+- [x] Produce a versioned, per-user Inno Setup definition and repeatable self-contained `win-x64` installer build with no administrator requirement.
+- [x] Detect per-user and per-machine WebView2 Evergreen installations and run Microsoft's signed online bootstrapper only when missing, with bounded failure guidance.
+- [x] Reject API keys, workbooks, signing certificates, manifests, and other local data if they appear in publish output.
+- [x] Add CI lifecycle coverage for install, same-version upgrade, version upgrade, rollback, and uninstall.
+- [x] Add a build-configurable `Check for updates` action that opens only the compiled HTTPS download location.
+- [x] Add a manually triggered workflow for SHA-256 checksums, source provenance, unsigned-policy verification, and draft release creation in the separate public repository.
+- [x] Configure the final public `releases/latest` URL in the application, installer, manifest, tests, and release automation.
+- [ ] Configure the narrowly scoped `PUBLIC_RELEASE_TOKEN` Actions secret in the private source repository.
+- [ ] Produce and verify the first public-channel unsigned installer from an annotated tag on `main`.
+- [ ] Test install, launch, upgrade, rollback, and uninstall on clean Windows 10 and Windows 11 x64 systems without Excel, .NET, Git, or developer tools.
+- [ ] Owner accepts Package 6 before Package 7 release-candidate acceptance begins.
+
+### Package 6 implementation evidence
+
+- Release build succeeds with zero warnings and zero errors, all 96 Core and App tests pass, and browser JavaScript plus release PowerShell scripts parse successfully.
+- GitHub Actions compiles versioned `0.9.0` and `1.0.0` per-user installers, then passes unattended install, upgrade, rollback, and uninstall checks using the stable application ID.
+- Pull-request CI enforces the approved unsigned policy and fails if the release installer or manifest claims or contains an Authenticode signature.
+- CI scans every tracked file and fails without echoing matched contents if a workbook, database, generated installer, log, private key, or Google-key-shaped value enters the repository.
+- CI independently recomputes each installer checksum and verifies its version, release manifest, exact public update location, private source repository, source commit, and unsigned state.
+- The manually triggered draft-release workflow accepts only annotated version tags whose commit is on private-source `main`, verifies that the checkout matches the tag, and exposes the public-repository token only to the final upload step.
+- The downloaded `1.0.0` CI proof from commit `9ee9cc6` has verified SHA-256 `a9956847bc9e65644545221b5e33fac9744b27ecc353d1a1bf7b8704eed85913` and independently passes install, same-version upgrade, and uninstall under the normal user token on Windows 10 Home 22H2 (build 19045).
+- Installer lifecycle failures retain no log but surface bounded fatal/error lines before cleanup, making environmental failures such as a denied per-user uninstall-registry write distinguishable from application packaging failures.
+- The owner approved a public binary-only release repository and an intentionally unsigned installer on September 14, 2026. The public repository contains no application source or company data.
+- The existing proof artifact predates the final public URL/provenance revision and is not the distributable release candidate.
+- Public-release token configuration, the final public-channel draft, clean Windows 10/11 launch testing, and owner acceptance remain open and are not claimed by this evidence.
 
 ## Release acceptance
 
