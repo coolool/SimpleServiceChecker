@@ -157,17 +157,17 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
-      "simpleservicechecker.app": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.Web.WebView2": "[1.0.4191.47, )",
-          "SimpleServiceChecker.Core": "[1.0.0, )"
-        }
-      },
       "simpleservicechecker.core": {
         "type": "Project",
         "dependencies": {
           "ClosedXML": "[0.105.1, )"
+        }
+      },
+      "StarlingServiceChecker": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Web.WebView2": "[1.0.4191.47, )",
+          "SimpleServiceChecker.Core": "[1.0.0, )"
         }
       }
     },

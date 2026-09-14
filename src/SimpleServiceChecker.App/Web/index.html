@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; connect-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.google.com; frame-src https://*.google.com; font-src 'self' https://fonts.gstatic.com; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <title>Simple Service Checker</title>
+  <title>Starling Service Checker</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main id="shell" class="shell">
     <aside id="sidebar" class="sidebar" aria-label="Service checker controls">
       <header class="brand">
-        <div><span class="eyebrow">Sales planning</span><h1>Simple Service Checker</h1></div>
+        <div><span class="eyebrow">Sales planning</span><h1>Starling Service Checker</h1></div>
         <button id="settings-toggle" class="icon-button" type="button" aria-expanded="false" aria-controls="settings-panel" title="Settings"><span aria-hidden="true">⚙</span><span class="sr-only">Open settings</span></button>
         <p>Quickly check local fibre and wireless options while speaking with a customer.</p>
       </header>
@@ -27,6 +27,10 @@
         </div>
         <p class="help-text">Or click the map and drag the blue customer pin.</p>
         <div id="location-status" class="status-box neutral" role="status" aria-live="polite">Choose an address, enter coordinates, or click the map.</div>
+        <div id="street-view-action" class="street-view-action" hidden>
+          <span id="street-view-status">Street View is available near this location.</span>
+          <button id="street-view-button" type="button">View Street View</button>
+        </div>
       </section>
 
       <section class="panel results-panel" aria-labelledby="fibre-heading">
@@ -61,9 +65,9 @@
     <div id="sidebar-resizer" class="sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize sidebar" tabindex="0"></div>
     <section class="workspace" aria-label="Coverage map">
       <div id="map" role="application" aria-label="Google coverage map"><div class="map-placeholder"><strong>Map unavailable</strong><span>Open Settings to add the company Google API key.</span></div></div>
-      <div class="map-overlay top-left"><span id="map-status" class="map-status"><b aria-hidden="true">○</b> Waiting for setup</span></div>
       <div class="map-overlay top-right">
-        <section class="map-legend" aria-label="Map legend"><strong>Coverage map</strong><span><i class="legend-dot customer"></i>Customer location</span><span><i class="legend-dot tower"></i>Tower</span><span><i class="legend-ring"></i>Published tower range</span><span><i class="legend-line"></i>Wireless candidate path</span></section>
+        <section class="map-legend" aria-label="Map legend"><strong>Coverage map</strong><span><i class="legend-dot customer"></i>Customer location</span><span><i class="legend-dot tower"></i>Tower</span><span><i class="legend-dot spreadsheet-issue"></i>Gray: Spreadsheet issue</span><span><i class="legend-ring"></i>Published tower range</span><span><i class="legend-line"></i>Wireless candidate path</span></section>
+        <span id="map-status" class="map-status"><b aria-hidden="true">○</b> Waiting for setup</span>
         <section id="clearance-legend" class="map-legend clearance-legend" aria-label="Line clearance legend" hidden><strong>Line clearance</strong><span><i class="clearance-black"></i>Black: Obstruction</span><span><i class="clearance-red"></i>Red: 10 ft or less (≤ 3.048 m)</span><span><i class="clearance-orange"></i>Orange: 30 ft or less (≤ 9.144 m)</span><span><i class="clearance-yellow"></i>Yellow: 50 ft or less (≤ 15.24 m)</span><span><i class="clearance-green"></i>Green: 51 ft or more</span></section>
       </div>
       <div class="map-overlay bottom-left"><p class="map-help">Click anywhere to check coordinates. Drag the blue pin to refine the location.</p></div>

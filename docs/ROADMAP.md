@@ -42,6 +42,7 @@ Package 1 is accepted. Real workbook towers are intentionally deferred to Packag
 
 - [x] Recreate the simplified Service Checker visual design (Package 3 implementation).
 - [x] Add address, coordinate, and map-pin location selection (Package 3 implementation).
+- [x] Default to satellite imagery, expose standard map types, and conditionally offer nearby Street View from the customer-location card (owner-approved follow-up).
 - [x] Add fibre address-range matching in Core (September 14, 2026).
 - [x] Add tower range filtering and candidate ordering in Core (September 14, 2026).
 - [x] Add tower circles, paths, terrain profiles, and Fresnel-zone clearance (Package 4 implementation).
@@ -109,7 +110,27 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - Browser JavaScript syntax validation and the self-contained `win-x64` publish both pass.
 - Elevation remains an on-demand Google client call. The application has no elevation backend, cache, database, search history, telemetry, ISED layer, or fibre overlay.
 - Owner completed a live functional review and approved Package 4 on September 14, 2026. No screenshot evidence is claimed for this acceptance.
-- A follow-up owner review requested dropped-pin address estimation, a true over-map profile, corrected chart bounds and details layout, visible tower names, and a smaller customer pin. These corrections require owner re-review before Package 5 begins.
+- Owner accepted and merged the follow-up corrections for dropped-pin address estimation, a true over-map profile, corrected chart bounds and details layout, visible tower names, and a smaller customer pin on September 14, 2026.
+
+### Approved map and branding follow-up
+
+- [x] Rename every user-facing product label and release artifact to `Starling Service Checker` / `StarlingServiceChecker` while retaining internal compatibility identifiers for existing saved settings and Google restrictions.
+- [x] Make satellite imagery the default and expose roadmap, satellite, hybrid, and terrain choices.
+- [x] Check for official Google Street View imagery within 200 metres of the active customer location and show the customer-card action only when available.
+- [x] Open Street View over the map, point toward the customer location, and provide a clear return to coverage without persisting location or panorama history.
+- [x] Place the tower-load status in the upper-right overlay directly below the Coverage map legend.
+- [x] Apply the owner-supplied Starling artwork as a multi-resolution Windows executable and window icon.
+- [x] Label grey tower markers in the Coverage map legend as spreadsheet issues.
+- [x] Owner accepts the map and branding follow-up before Package 5 spreadsheet-management work begins (September 14, 2026).
+
+#### Map and branding implementation evidence
+
+- Release build succeeds with zero warnings and zero errors on Windows 10 x64.
+- All 83 Core and App automated tests pass, and browser JavaScript passes its syntax check.
+- The self-contained `win-x64` publish produces `StarlingServiceChecker.exe` without an obsolete executable carrying the old display name.
+- Automated checks find no remaining occurrence of the former spaced product name outside generated output.
+- After the owner enabled Geocoding API, a live restricted-key reverse-geocoding proof returned `OK` with 15 results and the civic components required for fibre matching. The proof used a neutral public coordinate and emitted neither the key nor customer data.
+- The owner confirmed the revised application was working in the live review build on September 14, 2026, accepting the map, Street View, Geocoding, legend, icon, and branding follow-up. No screenshot evidence is claimed for this acceptance.
 
 ## Phase 3 - Spreadsheet management
 

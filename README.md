@@ -1,10 +1,10 @@
-# SimpleServiceChecker
+# Starling Service Checker
 
-SimpleServiceChecker is a low-maintenance Windows desktop application for sales staff to check likely fibre and fixed-wireless availability during a customer call.
+Starling Service Checker is a low-maintenance Windows desktop application for sales staff to check likely fibre and fixed-wireless availability during a customer call.
 
 ## Status
 
-Packages 1 through 4 are accepted. A requested Package 4 visual and dropped-pin correction is in progress before Package 5 begins.
+Packages 1 through 4 and the requested Package 4 visual and dropped-pin corrections are accepted. An owner-approved satellite-map, map-view, Street View, and Starling-branding follow-up is in review before Package 5 begins.
 
 ## Product boundaries
 

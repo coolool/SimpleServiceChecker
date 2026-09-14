@@ -24,7 +24,7 @@ Do not paste the key into GitHub, a task, a screenshot, or a log. Enter it only 
 
 ## Owner proof
 
-1. Launch the self-contained `SimpleServiceChecker.App.exe` proof.
+1. Launch the self-contained `StarlingServiceChecker.exe` proof.
 2. Confirm the warm sidebar, map area, and synthetic terrain/Fresnel chart render without a network request for Chart.js.
 3. Enter the restricted company key and select `Save & test`.
 4. Confirm Maps JavaScript, Places (New), and Elevation each show a green indicator.
