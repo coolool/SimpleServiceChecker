@@ -30,6 +30,7 @@
 - Automated tests: 12 passed, including bridge allow-listing, stable HTTPS origin, per-user key encryption, malformed-workbook recovery, and synthetic workbook validation.
 - Supplied workbook: validated read-only outside the repository with 224 tower rows and 16 fibre rows.
 - Packaging: unsigned self-contained `win-x64` proof published successfully; .NET is included and WebView2 Evergreen remains an external runtime until Package 6.
+- GitHub Actions: Windows restore, build, 12 tests, JavaScript syntax check, self-contained publish, and proof-artifact upload passed in pull request 1.
 - Live restricted-key proof, visual comparison, Windows 11 review, and owner acceptance remain pending.
 
 No production installer work should begin until this proof is accepted.
