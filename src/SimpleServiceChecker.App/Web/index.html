@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; connect-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.google.com; frame-src https://*.google.com; font-src 'self' https://fonts.gstatic.com; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <title>Simple Service Checker</title>
+  <title>Starling Service Checker</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main id="shell" class="shell">
     <aside id="sidebar" class="sidebar" aria-label="Service checker controls">
       <header class="brand">
-        <div><span class="eyebrow">Sales planning</span><h1>Simple Service Checker</h1></div>
+        <div><span class="eyebrow">Sales planning</span><h1>Starling Service Checker</h1></div>
         <button id="settings-toggle" class="icon-button" type="button" aria-expanded="false" aria-controls="settings-panel" title="Settings"><span aria-hidden="true">⚙</span><span class="sr-only">Open settings</span></button>
         <p>Quickly check local fibre and wireless options while speaking with a customer.</p>
       </header>
@@ -27,6 +27,10 @@
         </div>
         <p class="help-text">Or click the map and drag the blue customer pin.</p>
         <div id="location-status" class="status-box neutral" role="status" aria-live="polite">Choose an address, enter coordinates, or click the map.</div>
+        <div id="street-view-action" class="street-view-action" hidden>
+          <span id="street-view-status">Street View is available near this location.</span>
+          <button id="street-view-button" type="button">View Street View</button>
+        </div>
       </section>
 
       <section class="panel results-panel" aria-labelledby="fibre-heading">

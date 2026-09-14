@@ -54,7 +54,7 @@ public partial class MainWindow : Window
             _ = MessageBox.Show(
                 this,
                 $"The application could not start its embedded browser.\n\n{exception.Message}",
-                "Simple Service Checker",
+                "Starling Service Checker",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }

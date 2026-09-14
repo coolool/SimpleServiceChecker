@@ -4,7 +4,7 @@ Status: Approved on September 11, 2026. Package 1 implementation started on Sept
 
 ## 1. Outcome
 
-SimpleServiceChecker lets a salesperson enter a customer location and quickly see:
+Starling Service Checker lets a salesperson enter a customer location and quickly see:
 
 - whether the workbook lists fibre at that civic address;
 - which fixed-wireless towers include the location within their published range;
@@ -41,6 +41,8 @@ Preserve the familiar Service Checker visual character:
 - fibre summary before wireless candidates;
 - tower result cards with distance, height, range, maximum speeds, and plot;
 - coloured line-clearance paths and the existing clearance legend;
+- satellite imagery by default with roadmap, satellite, hybrid, and terrain choices;
+- an optional Street View action in the customer-location card when Google reports nearby imagery;
 - responsive behaviour for smaller laptop screens.
 
 Remove ticket, customer, heatmap, BMS, logging, and administrative controls.
@@ -56,6 +58,8 @@ The user can select a location by:
 An address selection retains structured Google address components for fibre matching. A dropped or dragged pin requests Google's closest address and clearly identifies it as an estimate; if Google does not return a complete civic address, the result is `Fibre: Address required`. Manually entered coordinates do not silently guess an address.
 
 After location selection, local distance and coverage calculations appear immediately. Google elevation work runs asynchronously and cannot block the initial availability summary.
+
+The map defaults to satellite imagery and offers Google's standard roadmap, satellite, hybrid, and terrain map types. The application checks for official Google Street View imagery within 200 metres of the active customer location. When imagery is available, a button at the bottom of the customer-location card opens Street View over the map and provides a clear return to coverage. No Street View result or location history is persisted.
 
 ## 6. Fibre result
 

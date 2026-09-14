@@ -16,6 +16,7 @@ The application must preserve the recognizable Service Checker map, warm sidebar
 - The main interface uses bundled HTML, CSS, plain JavaScript modules, and Chart.js. It has no runtime CDN or front-end framework.
 - Coverage comes only from a validated workbook containing `Tower Coverage` and `Fibre Coverage`.
 - Google Maps, Places, Elevation, and Geocoding use a company-owned restricted key encrypted for the current Windows user.
+- Google Maps defaults to satellite imagery, allows the four standard map types, and offers Street View from the customer-location card only when nearby official imagery is available.
 - Wireless plots include first Fresnel-zone clearance with defaults of 5.8 GHz, 60%, and effective-earth-radius factor 4/3.
 - A signed per-user installer is distributed through a company-controlled SharePoint or OneDrive link.
 - Updates are manual. `Check for Updates` opens the fixed company download location.
@@ -164,6 +165,7 @@ Build:
 - first-run setup for Google configuration and workbook selection;
 - resizable warm-coloured sidebar and full-window Google map;
 - Places search, decimal coordinates, map click, and draggable pin;
+- satellite map default, standard map-type selection, and a conditional nearby Street View action;
 - structured address transfer for fibre matching;
 - fibre result shown before wireless candidates;
 - tower circles, candidate paths, result cards, distances, speeds, notes, and legend;

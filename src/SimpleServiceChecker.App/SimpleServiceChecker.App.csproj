@@ -17,6 +17,9 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <AssemblyName>StarlingServiceChecker</AssemblyName>
+    <Product>Starling Service Checker</Product>
+    <Title>Starling Service Checker</Title>
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

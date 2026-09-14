@@ -1,4 +1,4 @@
-# SimpleServiceChecker project rules
+# Starling Service Checker project rules
 
 - Read `README.md`, `docs/PRODUCT_SCOPE.md`, `docs/FIRST_RELEASE_SPEC.md`, `docs/BUILD_PLAN.md`, and `docs/ROADMAP.md` before changing code.
 - Do not begin implementation without explicit owner authorization.

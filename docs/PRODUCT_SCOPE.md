@@ -9,8 +9,9 @@ Give a salesperson a fast, understandable view of likely fibre and fixed-wireles
 1. Search an address, enter latitude and longitude, or place a map pin; a dropped pin uses Google's closest civic-address estimate when available.
 2. Show the fibre address-range result and maximum listed speed.
 3. Show fixed-wireless towers whose published range includes the location.
-4. Draw the location, tower ranges, and candidate paths on Google Maps.
-5. Show the familiar terrain, line-clearance, and first Fresnel-zone profile for a selected wireless candidate.
+4. Draw the location, tower ranges, and candidate paths on Google Maps, defaulting to satellite imagery while allowing the standard map views.
+5. Offer Street View from the customer-location card when Google reports nearby imagery.
+6. Show the familiar terrain, line-clearance, and first Fresnel-zone profile for a selected wireless candidate.
 
 ## Coverage source
 
@@ -39,6 +40,8 @@ Each company creates and manages its own Google Maps Platform account, key, enab
 Google-connected features require internet access. Coverage data remains local, but searched locations and elevation paths are sent to Google services as required by the enabled map features.
 
 Dropped-pin address estimates use the Geocoding API. They are explicitly treated as Google's best guess and may still return `Fibre: Address required` when no complete civic address is available.
+
+The map starts in satellite view and exposes Google's roadmap, satellite, hybrid, and terrain choices. After a customer location is selected, the application checks for official Google Street View imagery within 200 metres. A Street View button appears at the bottom of the customer-location card only when imagery is available; opening it replaces the map until the user returns to coverage. The application does not persist the panorama, address, or coordinates.
 
 ## Explicitly excluded
 

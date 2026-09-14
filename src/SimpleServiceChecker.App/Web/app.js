@@ -20,6 +20,12 @@
     firstRunSetup: false,
     elevationService: null,
     geocoder: null,
+    streetViewService: null,
+    streetViewPanorama: null,
+    streetViewCandidate: null,
+    streetViewRevision: 0,
+    streetViewPreference: null,
+    streetViewSource: null,
     reverseGeocodeRevision: 0,
     locationNotice: null,
     elevationBusy: false,
@@ -36,6 +42,7 @@
     "google-key", "save-key", "clear-key", "key-badge", "provider-result",
     "choose-workbook", "workbook-badge", "workbook-result", "data-summary",
     "place-control", "latitude", "longitude", "check-coordinates", "clear-location",
+    "street-view-action", "street-view-status", "street-view-button",
     "location-status", "fibre-result", "candidate-count", "candidate-list", "map-status",
     "clearance-legend", "profile-card", "profile-heading", "profile-subtitle", "profile-close",
     "customer-height", "tower-height", "clutter-height", "frequency", "fresnel-reference",
@@ -183,9 +190,10 @@
       await initializePlaces();
       await initializeElevation();
       await initializeGeocoder();
+      await initializeStreetView();
       state.apiKeyConfigured = true;
       setBadge(elements.key_badge, "Connected", "success");
-      setStatus(elements.provider_result, "Maps, Places, and pin address lookup are ready. Elevation is used only when a wireless profile is opened.", "success");
+      setStatus(elements.provider_result, "Maps, Places, pin address lookup, and Street View are ready. Elevation is used only when a wireless profile is opened.", "success");
       setMapStatus(state.coverage ? `${state.coverage.towerCount} towers loaded` : "Map ready—choose a workbook", "ready");
       maybeFinishFirstSetup();
     } catch (error) {
@@ -218,11 +226,18 @@
   }
 
   async function initializeMap() {
-    const { Map } = await google.maps.importLibrary("maps");
+    const { Map, MapTypeControlStyle, MapTypeId } = await google.maps.importLibrary("maps");
+    const { ControlPosition } = await google.maps.importLibrary("core");
     state.map = new Map(document.querySelector("#map"), {
       center: { lat: 46.51, lng: -84.34 },
       zoom: 10,
-      mapTypeControl: false,
+      mapTypeId: MapTypeId.SATELLITE,
+      mapTypeControl: true,
+      mapTypeControlOptions: {
+        style: MapTypeControlStyle.DROPDOWN_MENU,
+        position: ControlPosition.TOP_CENTER,
+        mapTypeIds: [MapTypeId.ROADMAP, MapTypeId.SATELLITE, MapTypeId.HYBRID, MapTypeId.TERRAIN],
+      },
       streetViewControl: false,
       fullscreenControl: false,
       clickableIcons: false,
@@ -272,6 +287,26 @@
   async function initializeGeocoder() {
     const { Geocoder } = await google.maps.importLibrary("geocoding");
     state.geocoder = new Geocoder();
+  }
+
+  async function initializeStreetView() {
+    const { StreetViewPreference, StreetViewService, StreetViewSource } = await google.maps.importLibrary("streetView");
+    state.streetViewService = new StreetViewService();
+    state.streetViewPreference = StreetViewPreference.NEAREST;
+    state.streetViewSource = StreetViewSource.GOOGLE;
+    state.streetViewPanorama = state.map.getStreetView();
+    state.streetViewPanorama.setOptions({
+      addressControl: true,
+      clickToGo: true,
+      closeControl: true,
+      fullscreenControl: false,
+      motionTracking: false,
+      motionTrackingControl: false,
+      panControl: true,
+      visible: false,
+      zoomControl: true,
+    });
+    state.streetViewPanorama.addListener("visible_changed", syncStreetViewAction);
   }
 
   function addressFromPlace(place) {
@@ -444,7 +479,9 @@
     elements.latitude.value = latitude.toFixed(6);
     elements.longitude.value = longitude.toFixed(6);
     elements.clear_location.disabled = false;
+    closeStreetView();
     setCustomerPin({ lat: latitude, lng: longitude });
+    checkStreetViewAvailability({ lat: latitude, lng: longitude });
     clearCandidatePaths();
     showLoadingResults();
     post("selectLocation", { revision: state.revision, latitude, longitude, source, address });
@@ -483,6 +520,88 @@
     const center = state.customerPin?.getCenter();
     if (!center || !state.map) return;
     state.customerPin.setRadius(customerPinRadiusMetres(center.lat(), state.map.getZoom()));
+  }
+
+  function checkStreetViewAvailability(position) {
+    const availabilityRevision = ++state.streetViewRevision;
+    state.streetViewCandidate = null;
+    elements.street_view_action.hidden = true;
+    if (!state.streetViewService) return;
+
+    let settled = false;
+    const settle = (data, status) => {
+      if (settled) return;
+      settled = true;
+      if (availabilityRevision !== state.streetViewRevision) return;
+      const location = data?.location;
+      if (status !== "OK" || !location?.pano) {
+        elements.street_view_action.hidden = true;
+        return;
+      }
+
+      state.streetViewCandidate = {
+        pano: location.pano,
+        position: location.latLng?.toJSON?.() ?? null,
+        customer: position,
+      };
+      elements.street_view_status.textContent = "Street View is available near this customer location.";
+      elements.street_view_action.hidden = false;
+      syncStreetViewAction();
+    };
+
+    try {
+      const operation = state.streetViewService.getPanorama({
+        location: position,
+        radius: 200,
+        preference: state.streetViewPreference,
+        sources: [state.streetViewSource],
+      }, settle);
+      operation?.catch(() => settle(null, "UNKNOWN_ERROR"));
+    } catch {
+      settle(null, "UNKNOWN_ERROR");
+    }
+  }
+
+  function toggleStreetView() {
+    if (!state.streetViewPanorama || !state.streetViewCandidate) return;
+    if (state.streetViewPanorama.getVisible()) {
+      closeStreetView();
+      return;
+    }
+
+    closeProfile();
+    state.streetViewPanorama.setPano(state.streetViewCandidate.pano);
+    if (state.streetViewCandidate.position) {
+      state.streetViewPanorama.setPov({
+        heading: headingDegrees(state.streetViewCandidate.position, state.streetViewCandidate.customer),
+        pitch: 0,
+      });
+    }
+    state.streetViewPanorama.setVisible(true);
+    state.streetViewPanorama.focus();
+  }
+
+  function closeStreetView() {
+    if (state.streetViewPanorama?.getVisible()) {
+      state.streetViewPanorama.setVisible(false);
+    }
+    syncStreetViewAction();
+  }
+
+  function syncStreetViewAction() {
+    elements.street_view_button.textContent = state.streetViewPanorama?.getVisible()
+      ? "Return to coverage map"
+      : "View Street View";
+  }
+
+  function headingDegrees(from, to) {
+    const fromLatitude = Number(from.lat) * Math.PI / 180;
+    const toLatitude = Number(to.lat) * Math.PI / 180;
+    const longitudeDifference = (Number(to.lng) - Number(from.lng)) * Math.PI / 180;
+    const y = Math.sin(longitudeDifference) * Math.cos(toLatitude);
+    const x = Math.cos(fromLatitude) * Math.sin(toLatitude) -
+      Math.sin(fromLatitude) * Math.cos(toLatitude) * Math.cos(longitudeDifference);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
   }
 
   function showLoadingResults() {
@@ -580,6 +699,10 @@
     state.customerLocation = null;
     state.locationNotice = null;
     state.reverseGeocodeRevision += 1;
+    state.streetViewRevision += 1;
+    state.streetViewCandidate = null;
+    elements.street_view_action.hidden = true;
+    closeStreetView();
     state.lastCandidates = [];
     clearCandidatePaths();
     setStatus(elements.location_status, "Choose an address, enter coordinates, or click the map.");
@@ -590,6 +713,7 @@
   }
 
   function openProfile(candidate) {
+    closeStreetView();
     state.plotRevision += 1;
     state.selectedCandidate = candidate;
     state.terrainSamples = null;
@@ -911,6 +1035,7 @@
     if (event.key === "Enter") elements.check_coordinates.click();
   }));
   elements.clear_location.addEventListener("click", clearLocation);
+  elements.street_view_button.addEventListener("click", toggleStreetView);
   elements.profile_close.addEventListener("click", closeProfile);
   elements.profile_refresh.addEventListener("click", () => {
     if (!state.selectedCandidate) return;
