@@ -16,6 +16,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
+      - name: Scan tracked repository for prohibited data
+        shell: pwsh
+        run: ./build/Test-RepositorySafety.ps1
+
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:

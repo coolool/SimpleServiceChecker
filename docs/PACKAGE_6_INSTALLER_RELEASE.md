@@ -6,6 +6,7 @@
 - `build/Build-Installer.ps1` — self-contained publish, Microsoft bootstrapper verification, optional signing, installer compilation, SHA-256 checksum, and release manifest.
 - `build/Test-InstallerLifecycle.ps1` — unattended install, upgrade, rollback, signature, and uninstall checks in an isolated program directory.
 - `.github/workflows/ci.yml` — unsigned installer and lifecycle proof on each pull request and `main` update.
+- `build/Test-RepositorySafety.ps1` — fail-closed tracked-file scan for prohibited workbooks, databases, generated binaries, logs, private keys, and Google-key-shaped values without printing matched contents.
 - `.github/workflows/release.yml` — protected signing and draft-release workflow for existing `vMAJOR.MINOR.PATCH` tags.
 - Settings **Check for updates** action — opens the build-configured HTTPS location through the restricted native bridge.
 
