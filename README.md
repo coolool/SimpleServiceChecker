@@ -4,7 +4,7 @@ SimpleServiceChecker is a low-maintenance Windows desktop application for sales 
 
 ## Status
 
-Packages 1 through 4 are accepted. Package 5 spreadsheet management and recovery is next.
+Packages 1 through 4 are accepted. A requested Package 4 visual and dropped-pin correction is in progress before Package 5 begins.
 
 ## Product boundaries
 

@@ -109,6 +109,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - Browser JavaScript syntax validation and the self-contained `win-x64` publish both pass.
 - Elevation remains an on-demand Google client call. The application has no elevation backend, cache, database, search history, telemetry, ISED layer, or fibre overlay.
 - Owner completed a live functional review and approved Package 4 on September 14, 2026. No screenshot evidence is claimed for this acceptance.
+- A follow-up owner review requested dropped-pin address estimation, a true over-map profile, corrected chart bounds and details layout, visible tower names, and a smaller customer pin. These corrections require owner re-review before Package 5 begins.
 
 ## Phase 3 - Spreadsheet management
 

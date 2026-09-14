@@ -6,7 +6,7 @@ Give a salesperson a fast, understandable view of likely fibre and fixed-wireles
 
 ## Primary workflow
 
-1. Search an address, enter latitude and longitude, or place a map pin.
+1. Search an address, enter latitude and longitude, or place a map pin; a dropped pin uses Google's closest civic-address estimate when available.
 2. Show the fibre address-range result and maximum listed speed.
 3. Show fixed-wireless towers whose published range includes the location.
 4. Draw the location, tower ranges, and candidate paths on Google Maps.
@@ -37,6 +37,8 @@ A new workbook becomes active only after complete validation. The application ke
 Each company creates and manages its own Google Maps Platform account, key, enabled APIs, quotas, and billing. The application provides a first-run setup and diagnostics screen. No key is shipped with the application or committed to Git.
 
 Google-connected features require internet access. Coverage data remains local, but searched locations and elevation paths are sent to Google services as required by the enabled map features.
+
+Dropped-pin address estimates use the Geocoding API. They are explicitly treated as Google's best guess and may still return `Fibre: Address required` when no complete civic address is available.
 
 ## Explicitly excluded
 

@@ -51,9 +51,9 @@ The user can select a location by:
 
 - Google Places address search;
 - pasting decimal latitude and longitude; or
-- clicking or dragging a pin on the map.
+- clicking or dragging a pin on the map, followed by a Google reverse-geocoding best guess when available.
 
-An address selection retains structured Google address components for fibre matching. A raw map pin or coordinate without a reliable civic address returns `Fibre: Address required` rather than guessing.
+An address selection retains structured Google address components for fibre matching. A dropped or dragged pin requests Google's closest address and clearly identifies it as an estimate; if Google does not return a complete civic address, the result is `Fibre: Address required`. Manually entered coordinates do not silently guess an address.
 
 After location selection, local distance and coverage calculations appear immediately. Google elevation work runs asynchronously and cannot block the initial availability summary.
 
@@ -168,7 +168,7 @@ Each company supplies its own Google Maps Platform project and credentials. Firs
 - Map ID if required by the selected marker implementation; and
 - default map centre.
 
-The required Google services are Maps JavaScript API, Places API (New), and Elevation API. The application tests map loading, place search, and one bounded elevation request before reporting setup complete.
+The required Google services are Maps JavaScript API, Places API (New), Elevation API, and Geocoding API. The application tests map loading and place search before reporting setup complete; elevation and reverse geocoding report their own bounded, user-initiated provider errors.
 
 The key is never committed, logged, added to crash output, or included in an installer. Store it encrypted for the current Windows user using Windows Data Protection API. The key is necessarily delivered to the embedded map at runtime and is not a server secret. Setup must instruct the company to apply API restrictions and the tested application/referrer restriction.
 

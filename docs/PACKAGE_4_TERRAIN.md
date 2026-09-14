@@ -28,7 +28,7 @@ The default model is 5.8 GHz, 60% Fresnel reference, 4/3 effective Earth radius,
 
 ## Display
 
-The tall Chart.js profile shows:
+The tall Chart.js profile appears as a closeable overlay over the map and shows:
 
 - curvature-adjusted terrain;
 - the labelled global clutter assumption;
@@ -49,7 +49,7 @@ Text states whether sampled line of sight and the selected Fresnel reference are
 ## Manual acceptance checklist
 
 - [ ] Select a location with at least one wireless candidate and confirm local results appear before elevation is requested.
-- [ ] Open a candidate profile and confirm the map makes room for a tall chart without hiding Google attribution.
+- [ ] Open a candidate profile and confirm the tall chart overlays the map without reflowing it or hiding Google attribution.
 - [ ] Confirm terrain, clutter, line of sight, full Fresnel envelope, selected reference, labels, units, and summary are readable.
 - [ ] Confirm the selected map path uses the five approved clearance colours and the visible clearance legend.
 - [ ] Change frequency and Fresnel percentage; confirm the plot recalculates without showing another elevation request.
