@@ -174,7 +174,8 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - CI scans every tracked file and fails without echoing matched contents if a workbook, database, generated installer, log, private key, or Google-key-shaped value enters the repository.
 - CI independently recomputes each installer checksum and verifies its version, release manifest, exact update location, and claimed signing state; production additionally requires an Authenticode timestamp and rejects the development GitHub Releases URL.
 - The draft-release workflow accepts only annotated version tags whose commit is on `main`, and verifies that the checked-out commit matches the requested tag before signing.
-- The downloaded `1.0.0` CI proof has a matching SHA-256 checksum and independently passes install, same-version upgrade, and uninstall on Windows 10 Home 22H2 (build 19045).
+- The downloaded `1.0.0` CI proof from commit `9ee9cc6` has verified SHA-256 `a9956847bc9e65644545221b5e33fac9744b27ecc353d1a1bf7b8704eed85913` and independently passes install, same-version upgrade, and uninstall under the normal user token on Windows 10 Home 22H2 (build 19045).
+- Installer lifecycle failures retain no log but surface bounded fatal/error lines before cleanup, making environmental failures such as a denied per-user uninstall-registry write distinguishable from application packaging failures.
 - The proof artifact is deliberately unsigned and uses the private GitHub Releases page as a development-only update fallback. It is not the distributable release candidate.
 - Production signing, the final company update URL, clean Windows 10/11 launch testing, and owner acceptance remain open and are not claimed by this evidence.
 

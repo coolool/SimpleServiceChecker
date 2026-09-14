@@ -22,10 +22,27 @@ $expectedExecutable = Join-Path $testRoot 'StarlingServiceChecker.exe'
 function Invoke-Installer {
     param([string]$Path)
 
-    $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/NOICONS', '/CLOSEAPPLICATIONS', "/DIR=$testRoot")
-    $process = Start-Process -FilePath $Path -ArgumentList $arguments -Wait -PassThru -WindowStyle Hidden
-    if ($process.ExitCode -ne 0) {
-        throw "Installer $Path failed with exit code $($process.ExitCode)."
+    $logPath = Join-Path ([IO.Path]::GetTempPath()) "StarlingServiceChecker-Installer-$([Guid]::NewGuid().ToString('N')).log"
+    try {
+        $arguments = @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/NOICONS', '/CLOSEAPPLICATIONS',
+            "/DIR=$testRoot", "/LOG=$logPath")
+        $process = Start-Process -FilePath $Path -ArgumentList $arguments -Wait -PassThru -WindowStyle Hidden
+        if ($process.ExitCode -ne 0) {
+            $diagnostics = if (Test-Path -LiteralPath $logPath) {
+                @(Select-String -LiteralPath $logPath -Pattern 'Fatal exception', 'Exception message:', 'Error ', 'failed; code' -SimpleMatch |
+                    Select-Object -Last 8 |
+                    ForEach-Object { $_.Line.Trim() })
+            }
+            else {
+                @()
+            }
+            $suffix = if ($diagnostics.Count -gt 0) { " Diagnostics: $($diagnostics -join ' | ')" } else { '' }
+            throw "Installer $Path failed with exit code $($process.ExitCode).$suffix"
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $logPath -Force -ErrorAction SilentlyContinue
     }
 }
 
