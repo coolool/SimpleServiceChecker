@@ -121,7 +121,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - [x] Place the tower-load status in the upper-right overlay directly below the Coverage map legend.
 - [x] Apply the owner-supplied Starling artwork as a multi-resolution Windows executable and window icon.
 - [x] Label grey tower markers in the Coverage map legend as spreadsheet issues.
-- [ ] Owner accepts the map and branding follow-up before Package 5 spreadsheet-management work begins.
+- [x] Owner accepts the map and branding follow-up before Package 5 spreadsheet-management work begins (September 14, 2026).
 
 #### Map and branding implementation evidence
 
@@ -130,7 +130,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - The self-contained `win-x64` publish produces `StarlingServiceChecker.exe` without an obsolete executable carrying the old display name.
 - Automated checks find no remaining occurrence of the former spaced product name outside generated output.
 - After the owner enabled Geocoding API, a live restricted-key reverse-geocoding proof returned `OK` with 15 results and the civic components required for fibre matching. The proof used a neutral public coordinate and emitted neither the key nor customer data.
-- Live Google map-type and Street View behaviour remains subject to owner review with the configured company key; no successful Street View response is claimed by automated tests.
+- The owner confirmed the revised application was working in the live review build on September 14, 2026, accepting the map, Street View, Geocoding, legend, icon, and branding follow-up. No screenshot evidence is claimed for this acceptance.
 
 ## Phase 3 - Spreadsheet management
 
