@@ -5,6 +5,7 @@
 - The user-facing product name is `Starling Service Checker` and the published executable is `StarlingServiceChecker.exe`.
 - The map starts in satellite view.
 - The map-type control allows roadmap, satellite, hybrid, and terrain views.
+- The tower-load status appears directly below the Coverage map legend in the upper-right overlay.
 - Selecting a customer location checks for official Google Street View imagery within 200 metres.
 - The Street View action appears at the bottom of the Customer Location card only when imagery is available.
 - Street View opens over the coverage map, initially faces the customer location, and can be closed to return to coverage.
