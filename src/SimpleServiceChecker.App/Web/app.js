@@ -50,7 +50,7 @@
     "place-control", "latitude", "longitude", "check-coordinates", "clear-location",
     "street-view-action", "street-view-status", "street-view-button",
     "location-status", "fibre-result", "candidate-count", "candidate-list", "map-status",
-    "clearance-legend", "profile-card", "profile-heading", "profile-subtitle", "profile-close",
+    "clearance-legend", "profile-card", "profile-heading", "profile-subtitle", "profile-minimize", "profile-close",
     "customer-height", "tower-height", "clutter-height", "frequency", "fresnel-reference",
     "earth-model", "profile-refresh", "profile-status", "profile-output", "profile-summary", "terrain-chart",
   ].map(id => [id.replaceAll("-", "_"), document.querySelector(`#${id}`)]));
@@ -824,6 +824,7 @@
     state.plotRevision += 1;
     state.selectedCandidate = candidate;
     state.terrainSamples = null;
+    setProfileMinimized(false);
     elements.profile_card.hidden = false;
     elements.profile_card.parentElement.classList.add("profile-open");
     elements.profile_heading.textContent = "Terrain and Fresnel clearance";
@@ -840,6 +841,7 @@
     state.plotRevision += 1;
     state.selectedCandidate = null;
     state.terrainSamples = null;
+    setProfileMinimized(false);
     elements.profile_card.hidden = true;
     elements.profile_card.parentElement.classList.remove("profile-open");
     elements.clearance_legend.hidden = true;
@@ -847,6 +849,13 @@
     state.chart?.destroy();
     state.chart = null;
     drawCandidatePaths(state.lastCandidates, state.customerLocation);
+  }
+
+  function setProfileMinimized(minimized) {
+    elements.profile_card.classList.toggle("minimized", minimized);
+    elements.profile_minimize.setAttribute("aria-label", minimized ? "Restore terrain profile" : "Minimize terrain profile");
+    elements.profile_minimize.title = minimized ? "Restore profile" : "Minimize profile";
+    elements.profile_minimize.querySelector("span").textContent = minimized ? "□" : "—";
   }
 
   function showProfileStatus(message, kind = "") {
@@ -1151,6 +1160,7 @@
   }));
   elements.clear_location.addEventListener("click", clearLocation);
   elements.street_view_button.addEventListener("click", toggleStreetView);
+  elements.profile_minimize.addEventListener("click", () => setProfileMinimized(!elements.profile_card.classList.contains("minimized")));
   elements.profile_close.addEventListener("click", closeProfile);
   elements.profile_refresh.addEventListener("click", () => {
     if (!state.selectedCandidate) return;
