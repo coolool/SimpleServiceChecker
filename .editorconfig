@@ -1,0 +1,18 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+
+[*.{cs,csproj,props,xaml}]
+indent_style = space
+indent_size = 4
+
+[*.{json,js,css,html,yml,yaml,md}]
+indent_style = space
+indent_size = 2
+
+[*.cs]
+dotnet_analyzer_diagnostic.category-Style.severity = warning
+csharp_style_namespace_declarations = file_scoped:warning
