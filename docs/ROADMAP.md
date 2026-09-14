@@ -140,7 +140,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - [x] Add a visible data filename, activation time, record count, warning summary, and schema version.
 - [x] Keep source paths session-only, read sources only during validation or explicit reload, and open only a read-only inspection copy.
 - [x] Persist SHA-256 manifests plus current and previous local copies, with startup integrity checking and previous-copy recovery.
-- [ ] Owner accepts Package 5 before Package 6 installer and release work begins.
+- [x] Owner accepts Package 5 before Package 6 installer and release work begins (September 14, 2026).
 
 ### Package 5 implementation evidence
 
@@ -149,7 +149,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - New lifecycle tests cover invalid workbooks, missing and exclusively locked sources, retained active data, persisted warning details, tamper rejection, startup recovery from corruption, restore after service recreation, and cleanup of read-only inspection copies.
 - The self-contained `win-x64` review build publishes successfully without Excel or a separately installed .NET runtime.
 - The selected source path is never stored in the manifest or preferences. The source is copied using shared read access for validation or explicit reload and is never watched or edited.
-- Manual owner review remains required for the visible workflow and Package 5 gate.
+- The owner approved Package 5 on September 14, 2026 after reviewing the live self-contained build. No screenshot evidence is claimed for this acceptance.
 
 ## Phase 4 - Installer and release
 

@@ -52,3 +52,5 @@ Before Package 6 begins, confirm in the review build that:
 4. **Reload** refreshes an edited source during the same session and asks for the source again after application restart.
 5. **Open current spreadsheet** opens an inspection copy that cannot modify active coverage.
 6. After two valid activations, **Restore previous** returns to the prior data and still works after an application restart.
+
+The owner approved Package 5 on September 14, 2026 after reviewing the live self-contained build. No screenshot evidence is claimed for this acceptance.

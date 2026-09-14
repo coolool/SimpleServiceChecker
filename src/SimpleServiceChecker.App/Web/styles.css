@@ -70,6 +70,8 @@ button:hover:not(:disabled) { background: var(--coffee-dark); }
 .workbook-facts dd { margin: 2px 0 0; overflow-wrap: anywhere; font-size: 10px; font-weight: 700; }
 .workbook-warnings { max-height: 112px; margin: 3px 0 0; padding-left: 18px; overflow-y: auto; color: #75510f; font-size: 10px; line-height: 1.4; }
 .workbook-warnings[hidden] { display: none; }
+.validation-issues { max-height: 160px; margin-top: 8px; padding: 8px 8px 8px 25px; color: #873426; background: #f8e3dc; border-radius: 7px; }
+.validation-issues .validation-warning { color: #75510f; }
 
 .place-control { min-height: 46px; margin-top: 12px; }
 .place-control gmp-place-autocomplete { display: block; width: 100%; min-height: 46px; color: #34271f; color-scheme: light; background: #fff; border: 1px solid #bea58e; border-radius: 8px; }

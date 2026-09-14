@@ -46,7 +46,7 @@
     "choose-workbook", "activate-workbook", "reload-workbook", "open-current-workbook", "restore-previous-workbook",
     "workbook-selection", "workbook-current", "workbook-current-file", "workbook-activated",
     "workbook-tower-count", "workbook-fibre-count", "workbook-warning-count", "workbook-schema-version",
-    "workbook-warnings", "workbook-badge", "workbook-result", "data-summary",
+    "workbook-warnings", "workbook-validation-issues", "workbook-badge", "workbook-result", "data-summary",
     "place-control", "latitude", "longitude", "check-coordinates", "clear-location",
     "street-view-action", "street-view-status", "street-view-button",
     "location-status", "fibre-result", "candidate-count", "candidate-list", "map-status",
@@ -125,11 +125,13 @@
         state.workbookSelected = Boolean(payload.canActivate);
         elements.workbook_selection.textContent = payload.fileName ? `Selected: ${payload.fileName}` : "Spreadsheet selected.";
         setStatus(elements.workbook_result, "Ready to validate. Active coverage will not change unless validation succeeds.");
+        clearWorkbookValidationIssues();
         updateWorkbookControls();
         break;
       case "workbookOperationStarted":
         setWorkbookBusy(true);
         setStatus(elements.workbook_result, payload.message ?? "Validating the spreadsheet…");
+        clearWorkbookValidationIssues();
         break;
       case "workbookRejected":
         setWorkbookBusy(false);
@@ -155,6 +157,7 @@
       case "workbookOpened":
         setWorkbookBusy(false);
         setStatus(elements.workbook_result, payload.message ?? "Opened a read-only copy.", "success");
+        clearWorkbookValidationIssues();
         updateWorkbookControls();
         break;
       case "workbookOperationFailed":
@@ -218,6 +221,7 @@
     elements.workbook_warning_count.textContent = String(payload.warningCount ?? 0);
     elements.workbook_schema_version.textContent = `${payload.schemaVersion ?? "—"} (app ${payload.applicationSchemaVersion ?? "—"})`;
     renderWorkbookWarnings(payload.warnings ?? []);
+    clearWorkbookValidationIssues();
     if (payload.operation === "restored") {
       state.workbookSelected = false;
       elements.workbook_selection.textContent = "Previous copy restored. Choose a source spreadsheet before the next update.";
@@ -247,8 +251,19 @@
   }
 
   function showWorkbookIssues(errors, warnings) {
-    const message = [...errors, ...warnings, ...(state.workbookConfigured ? ["The current working copy remains active."] : [])].join(" ");
+    const errorCount = errors.length;
+    const warningCount = warnings.length;
+    const message = `Validation found ${errorCount} ${errorCount === 1 ? "error" : "errors"} and ${warningCount} ${warningCount === 1 ? "warning" : "warnings"}.${state.workbookConfigured ? " The current working copy remains active." : ""}`;
     setStatus(elements.workbook_result, message, "error");
+    elements.workbook_validation_issues.replaceChildren(
+      ...errors.map(issue => node("li", {}, `Error: ${issue}`)),
+      ...warnings.map(issue => node("li", { class: "validation-warning" }, `Warning: ${issue}`)));
+    elements.workbook_validation_issues.hidden = errorCount + warningCount === 0;
+  }
+
+  function clearWorkbookValidationIssues() {
+    elements.workbook_validation_issues.replaceChildren();
+    elements.workbook_validation_issues.hidden = true;
   }
 
   function formatDateTime(value) {
