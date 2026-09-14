@@ -119,6 +119,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - [x] Check for official Google Street View imagery within 200 metres of the active customer location and show the customer-card action only when available.
 - [x] Open Street View over the map, point toward the customer location, and provide a clear return to coverage without persisting location or panorama history.
 - [x] Place the tower-load status in the upper-right overlay directly below the Coverage map legend.
+- [x] Apply the owner-supplied Starling artwork as a multi-resolution Windows executable and window icon.
 - [ ] Owner accepts the map and branding follow-up before Package 5 spreadsheet-management work begins.
 
 #### Map and branding implementation evidence
