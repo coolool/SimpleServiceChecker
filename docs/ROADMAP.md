@@ -167,7 +167,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - [ ] Configure the narrowly scoped `PUBLIC_RELEASE_TOKEN` Actions secret in the private source repository.
 - [ ] Produce and verify the first public-channel unsigned installer from an annotated tag on `main`.
 - [ ] Test install, launch, upgrade, rollback, and uninstall on clean Windows 10 and Windows 11 x64 systems without Excel, .NET, Git, or developer tools.
-- [ ] Owner accepts Package 6 before Package 7 release-candidate acceptance begins.
+- [x] Owner accepts Package 6 and authorizes Package 7 to begin with the public-token, final-draft, and clean-machine items carried forward (September 14, 2026).
 
 ### Package 6 implementation evidence
 
@@ -180,10 +180,14 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - The downloaded `1.0.0` CI proof from commit `9ee9cc6` has verified SHA-256 `a9956847bc9e65644545221b5e33fac9744b27ecc353d1a1bf7b8704eed85913` and independently passes install, same-version upgrade, and uninstall under the normal user token on Windows 10 Home 22H2 (build 19045).
 - Installer lifecycle failures retain no log but surface bounded fatal/error lines before cleanup, making environmental failures such as a denied per-user uninstall-registry write distinguishable from application packaging failures.
 - The owner approved a public binary-only release repository and an intentionally unsigned installer on September 14, 2026. The public repository contains no application source or company data.
-- The existing proof artifact predates the final public URL/provenance revision and is not the distributable release candidate.
-- Public-release token configuration, the final public-channel draft, clean Windows 10/11 launch testing, and owner acceptance remain open and are not claimed by this evidence.
+- The final Package 6 CI run `34903893620` passed all 96 tests plus installer build, lifecycle, manifest, checksum, provenance, public-URL, repository-safety, JavaScript, and unsigned-policy checks.
+- The downloaded final Package 6 CI installer has verified SHA-256 `6a9322ab31e4640ff3dcb38531122a6edfaf8bbd6117be8f92527d17dd0130a2` and independently passed install, same-version upgrade, and uninstall on Windows 10 Home 22H2 (build 19045).
+- The public release repository was verified public with only its safety/download README; Issues and Wiki are disabled, and no installer has been published prematurely.
+- The owner approved Package 6 on September 14, 2026. Public-token configuration, the final public-channel draft, and clean Windows 11 testing remain Package 7 acceptance items rather than Package 6 claims.
 
 ## Release acceptance
+
+Package 7 evidence and open gates are tracked in `PACKAGE_7_RELEASE_ACCEPTANCE.md`.
 
 - A salesperson can install the application without developer tools or Excel.
 - A first-time user can configure a company Google key and select a valid workbook.
