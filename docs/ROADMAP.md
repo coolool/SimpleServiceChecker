@@ -129,6 +129,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - All 83 Core and App automated tests pass, and browser JavaScript passes its syntax check.
 - The self-contained `win-x64` publish produces `StarlingServiceChecker.exe` without an obsolete executable carrying the old display name.
 - Automated checks find no remaining occurrence of the former spaced product name outside generated output.
+- After the owner enabled Geocoding API, a live restricted-key reverse-geocoding proof returned `OK` with 15 results and the civic components required for fibre matching. The proof used a neutral public coordinate and emitted neither the key nor customer data.
 - Live Google map-type and Street View behaviour remains subject to owner review with the configured company key; no successful Street View response is claimed by automated tests.
 
 ## Phase 3 - Spreadsheet management

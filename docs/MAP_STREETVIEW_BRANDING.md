@@ -28,3 +28,7 @@ Internal solution, project, namespace, local-data-folder, repository, and stable
 6. Open Street View, confirm it replaces the map, and use `Return to coverage map` or Google's close control to return.
 7. Choose a remote customer location without imagery inside 200 metres and confirm the Street View action remains hidden.
 8. Open a wireless profile and confirm the terrain plot overlays the coverage map and Street View is closed.
+
+## Provider proof
+
+After Geocoding API was enabled, the saved restricted key returned Google status `OK` for a neutral public-coordinate reverse-geocoding request, with street number, route, locality, and formatted-address fields present. The proof did not output the key or use customer data. Dropped-pin and dragged-pin selections use the same Google Geocoding service and still require visual owner confirmation in the application.
