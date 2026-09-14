@@ -30,7 +30,7 @@ The version 1 installer is online-only. It deliberately does not bundle the much
 
 ## Signing-path proof
 
-Pull-request CI creates a one-day, self-signed code-signing certificate on the disposable Windows runner, trusts it only within that runner, and exercises the same application, installer, signed-uninstaller, and signature-verification commands used by production. The test certificate is deleted in a `finally` block, and the test-signed installer is never uploaded as an artifact.
+Pull-request CI creates a one-day, self-signed code-signing certificate on the disposable Windows runner, trusts it only within that runner, and exercises the same application, installer, signed-uninstaller, and signature-verification commands used by production. A bounded `always()` cleanup step deletes the test certificate, and the test-signed installer is never uploaded as an artifact.
 
 This proves the build mechanics without exposing or requiring the company's production certificate. It does not establish a trusted publisher or replace the timestamped production-signing and clean-machine gates. `AllowUntimestampedTestSigning` exists only for this ephemeral test path; normal signed builds still require an HTTPS RFC 3161 timestamp URL.
 

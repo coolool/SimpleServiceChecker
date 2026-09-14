@@ -62,50 +62,64 @@ jobs:
             -CurrentInstaller artifacts/installer/StarlingServiceChecker-Setup-1.0.0.exe `
             -CurrentVersion 1.0.0
 
-      - name: Test Authenticode and signed-uninstaller path
+      - name: Create ephemeral CI signing certificate
         shell: pwsh
         run: |
-          $certificate = $null
           $certificatePath = Join-Path $env:RUNNER_TEMP 'starling-ci-signing.cer'
-          try {
-            $certificate = New-SelfSignedCertificate `
-              -Type CodeSigningCert `
-              -Subject 'CN=Starling Service Checker CI Test' `
-              -CertStoreLocation Cert:\CurrentUser\My `
-              -KeyAlgorithm RSA `
-              -KeyLength 2048 `
-              -HashAlgorithm SHA256 `
-              -NotAfter (Get-Date).AddDays(1)
-            Export-Certificate -Cert $certificate -FilePath $certificatePath | Out-Null
-            Import-Certificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\Root | Out-Null
-            Import-Certificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\TrustedPublisher | Out-Null
+          $certificate = New-SelfSignedCertificate `
+            -Type CodeSigningCert `
+            -Subject 'CN=Starling Service Checker CI Test' `
+            -CertStoreLocation Cert:\CurrentUser\My `
+            -KeyAlgorithm RSA `
+            -KeyLength 2048 `
+            -HashAlgorithm SHA256 `
+            -NotAfter (Get-Date).AddDays(1)
+          Export-Certificate -Cert $certificate -FilePath $certificatePath | Out-Null
+          Import-Certificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\Root | Out-Null
+          Import-Certificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\TrustedPublisher | Out-Null
 
-            $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -File |
-              Sort-Object FullName -Descending |
-              Select-Object -First 1
-            if ($null -eq $signTool) { throw 'signtool.exe was not found on the runner.' }
+          $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -File |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if ($null -eq $signTool) { throw 'signtool.exe was not found on the runner.' }
+          "CI_SIGNING_CERT_SHA1=$($certificate.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "CI_SIGNING_CERT_PATH=$certificatePath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "SIGNTOOL_PATH=$($signTool.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-            ./build/Build-Installer.ps1 `
-              -Version 1.0.0 `
-              -PublishDirectory artifacts/publish-signed-test `
-              -OutputDirectory artifacts/installer-signed-test `
-              -SkipRestore `
-              -SignToolPath $signTool.FullName `
-              -SigningCertificateThumbprint $certificate.Thumbprint `
-              -AllowUntimestampedTestSigning
-            ./build/Test-InstallerLifecycle.ps1 `
-              -CurrentInstaller artifacts/installer-signed-test/StarlingServiceChecker-Setup-1.0.0.exe `
-              -CurrentVersion 1.0.0 `
-              -VerifySignatures `
-              -SignToolPath $signTool.FullName
-          }
-          finally {
-            if ($null -ne $certificate) {
-              foreach ($store in @('My', 'Root', 'TrustedPublisher')) {
-                Remove-Item -LiteralPath "Cert:\CurrentUser\$store\$($certificate.Thumbprint)" -Force -ErrorAction SilentlyContinue
-              }
+      - name: Build with ephemeral Authenticode certificate
+        timeout-minutes: 5
+        shell: pwsh
+        run: |
+          ./build/Build-Installer.ps1 `
+            -Version 1.0.0 `
+            -PublishDirectory artifacts/publish-signed-test `
+            -OutputDirectory artifacts/installer-signed-test `
+            -SkipRestore `
+            -SignToolPath $env:SIGNTOOL_PATH `
+            -SigningCertificateThumbprint $env:CI_SIGNING_CERT_SHA1 `
+            -AllowUntimestampedTestSigning
+
+      - name: Verify signed installer lifecycle
+        timeout-minutes: 3
+        shell: pwsh
+        run: |
+          ./build/Test-InstallerLifecycle.ps1 `
+            -CurrentInstaller artifacts/installer-signed-test/StarlingServiceChecker-Setup-1.0.0.exe `
+            -CurrentVersion 1.0.0 `
+            -VerifySignatures `
+            -SignToolPath $env:SIGNTOOL_PATH
+
+      - name: Remove ephemeral CI signing certificate
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:CI_SIGNING_CERT_SHA1 -match '^[0-9A-Fa-f]{40}$') {
+            foreach ($store in @('My', 'Root', 'TrustedPublisher')) {
+              Remove-Item -LiteralPath "Cert:\CurrentUser\$store\$env:CI_SIGNING_CERT_SHA1" -Force -ErrorAction SilentlyContinue
             }
-            Remove-Item -LiteralPath $certificatePath -Force -ErrorAction SilentlyContinue
+          }
+          if (-not [string]::IsNullOrWhiteSpace($env:CI_SIGNING_CERT_PATH)) {
+            Remove-Item -LiteralPath $env:CI_SIGNING_CERT_PATH -Force -ErrorAction SilentlyContinue
           }
 
       - name: Upload Windows installer proof
