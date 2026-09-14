@@ -9,9 +9,11 @@ param(
     [string]$WebView2BootstrapperPath,
     [switch]$SkipRestore,
     [string]$SignToolPath,
+    [ValidatePattern('^[0-9A-Fa-f]{40}$')]
     [string]$SigningCertificateThumbprint,
     [ValidatePattern('^https://')]
-    [string]$TimestampUrl
+    [string]$TimestampUrl,
+    [switch]$AllowUntimestampedTestSigning
 )
 
 $ErrorActionPreference = 'Stop'
@@ -92,10 +94,14 @@ function Assert-MicrosoftBootstrapper {
 function Invoke-Sign {
     param([string]$Path)
 
-    Invoke-Checked $SignToolPath @(
+    $arguments = @(
         'sign', '/sha1', $SigningCertificateThumbprint,
-        '/fd', 'SHA256', '/td', 'SHA256', '/tr', $TimestampUrl,
-        '/d', 'Starling Service Checker', $Path)
+        '/fd', 'SHA256')
+    if (-not [string]::IsNullOrWhiteSpace($TimestampUrl)) {
+        $arguments += @('/td', 'SHA256', '/tr', $TimestampUrl)
+    }
+    $arguments += @('/d', 'Starling Service Checker', $Path)
+    Invoke-Checked $SignToolPath $arguments
     Invoke-Checked $SignToolPath @('verify', '/pa', '/all', $Path)
 }
 
@@ -103,14 +109,23 @@ $publishPath = Resolve-ArtifactPath $PublishDirectory 'publish\win-x64'
 $outputPath = Resolve-ArtifactPath $OutputDirectory 'installer'
 $bootstrapperPath = Resolve-ArtifactPath $WebView2BootstrapperPath 'prerequisites\MicrosoftEdgeWebview2Setup.exe'
 $bootstrapperDirectory = Split-Path -Parent $bootstrapperPath
-$signingRequested = -not [string]::IsNullOrWhiteSpace($SignToolPath) -or
-    -not [string]::IsNullOrWhiteSpace($SigningCertificateThumbprint) -or
-    -not [string]::IsNullOrWhiteSpace($TimestampUrl)
-if ($signingRequested -and (
-    [string]::IsNullOrWhiteSpace($SignToolPath) -or
-    [string]::IsNullOrWhiteSpace($SigningCertificateThumbprint) -or
-    [string]::IsNullOrWhiteSpace($TimestampUrl))) {
-    throw 'SignToolPath, SigningCertificateThumbprint, and TimestampUrl must all be supplied for a signed build.'
+$hasSignTool = -not [string]::IsNullOrWhiteSpace($SignToolPath)
+$hasCertificate = -not [string]::IsNullOrWhiteSpace($SigningCertificateThumbprint)
+if ($hasSignTool -xor $hasCertificate) {
+    throw 'SignToolPath and SigningCertificateThumbprint must be supplied together.'
+}
+$signingRequested = $hasSignTool -and $hasCertificate
+if (-not [string]::IsNullOrWhiteSpace($TimestampUrl) -and -not $signingRequested) {
+    throw 'TimestampUrl can only be used with SignToolPath and SigningCertificateThumbprint.'
+}
+if ($signingRequested -and [string]::IsNullOrWhiteSpace($TimestampUrl) -and -not $AllowUntimestampedTestSigning) {
+    throw 'TimestampUrl is required for signed builds. Use AllowUntimestampedTestSigning only with an ephemeral CI test certificate.'
+}
+if ($AllowUntimestampedTestSigning -and (-not $signingRequested -or -not [string]::IsNullOrWhiteSpace($TimestampUrl))) {
+    throw 'AllowUntimestampedTestSigning requires signing credentials and no TimestampUrl.'
+}
+if ($signingRequested -and -not (Test-Path -LiteralPath $SignToolPath -PathType Leaf)) {
+    throw "SignToolPath was not found: $SignToolPath"
 }
 
 Reset-GeneratedDirectory $publishPath
@@ -167,7 +182,13 @@ try {
         "/DWebView2Bootstrapper=$bootstrapperPath",
         "/DUpdateLocationUrl=$UpdateLocationUrl")
     if ($signingRequested) {
-        $signCommand = '"{0}" sign /sha1 {1} /fd SHA256 /td SHA256 /tr "{2}" /d $qStarling Service Checker$q $f' -f $SignToolPath, $SigningCertificateThumbprint, $TimestampUrl
+        $timestampArguments = if ([string]::IsNullOrWhiteSpace($TimestampUrl)) {
+            ''
+        }
+        else {
+            '/td SHA256 /tr "{0}"' -f $TimestampUrl
+        }
+        $signCommand = '"{0}" sign /sha1 {1} /fd SHA256 {2} /d $qStarling Service Checker$q $f' -f $SignToolPath, $SigningCertificateThumbprint, $timestampArguments
         $innoArguments += "--signtool=starling=$signCommand"
         $innoArguments += '/DSignToolName=starling'
     }
@@ -196,6 +217,7 @@ try {
         installer = [IO.Path]::GetFileName($installerPath)
         sha256 = $installerHash
         signed = $signingRequested
+        timestamped = $signingRequested -and -not [string]::IsNullOrWhiteSpace($TimestampUrl)
         updateLocation = $UpdateLocationUrl
         webView2 = 'Microsoft Evergreen bootstrapper, installed only when missing'
     } | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding UTF8

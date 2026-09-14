@@ -28,6 +28,12 @@ The installer shows actionable guidance when the runtime remains unavailable. Th
 
 The version 1 installer is online-only. It deliberately does not bundle the much larger fixed/offline runtime.
 
+## Signing-path proof
+
+Pull-request CI creates a one-day, self-signed code-signing certificate on the disposable Windows runner, trusts it only within that runner, and exercises the same application, installer, signed-uninstaller, and signature-verification commands used by production. The test certificate is deleted in a `finally` block, and the test-signed installer is never uploaded as an artifact.
+
+This proves the build mechanics without exposing or requiring the company's production certificate. It does not establish a trusted publisher or replace the timestamped production-signing and clean-machine gates. `AllowUntimestampedTestSigning` exists only for this ephemeral test path; normal signed builds still require an HTTPS RFC 3161 timestamp URL.
+
 ## Unsigned proof build
 
 Prerequisites: .NET SDK from `global.json`, Inno Setup 6 or 7, and internet access.
@@ -58,6 +64,8 @@ Environment variables:
 - `CODE_SIGNING_TIMESTAMP_URL` — the HTTPS RFC 3161 timestamp endpoint approved by the certificate issuer.
 
 Never commit the certificate, password, API key, workbook, or decoded temporary PFX. The workflow imports the certificate into the ephemeral runner's current-user store, signs the application executable and first-party DLLs, lets Inno Setup sign the installer and uninstaller, verifies each relevant signature, and removes imported certificate material in an `always()` cleanup step.
+
+The signing secrets are scoped only to the configuration-check and certificate-import steps rather than exposed to unrelated checkout, restore, build, or test actions. If a PFX includes a certificate chain, the workflow selects a currently valid private-key certificate with the Code Signing extended-key usage and removes every imported certificate from the runner afterward.
 
 ## Release procedure
 
