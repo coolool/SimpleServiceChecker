@@ -7,12 +7,7 @@ param(
     [string]$CurrentVersion,
     [string]$PreviousInstaller,
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$PreviousVersion,
-    [switch]$VerifySignatures,
-    [string]$SignToolPath,
-    [ValidatePattern('^[0-9A-Fa-f]{40}$')]
-    [string]$ExpectedSignerThumbprint,
-    [switch]$AllowUntrustedTestCertificate
+    [string]$PreviousVersion
 )
 
 $ErrorActionPreference = 'Stop'
@@ -58,45 +53,12 @@ function Assert-InstalledVersion {
     }
 }
 
-function Assert-Signed {
-    param([string]$Path)
-
-    if ($AllowUntrustedTestCertificate) {
-        if ([string]::IsNullOrWhiteSpace($ExpectedSignerThumbprint)) {
-            throw 'ExpectedSignerThumbprint is required for untrusted test-certificate verification.'
-        }
-        $signature = Get-AuthenticodeSignature -LiteralPath $Path
-        if ($null -eq $signature.SignerCertificate -or
-            $signature.SignerCertificate.Thumbprint -ne $ExpectedSignerThumbprint -or
-            $signature.Status -in @(
-                [Management.Automation.SignatureStatus]::NotSigned,
-                [Management.Automation.SignatureStatus]::HashMismatch,
-                [Management.Automation.SignatureStatus]::NotSupportedFileFormat,
-                [Management.Automation.SignatureStatus]::Incompatible)) {
-            throw "Ephemeral Authenticode verification failed for $Path with status $($signature.Status)."
-        }
-        return
-    }
-
-    if ([string]::IsNullOrWhiteSpace($SignToolPath)) {
-        throw 'SignToolPath is required when VerifySignatures is set.'
-    }
-    & $SignToolPath verify /pa /all $Path
-    if ($LASTEXITCODE -ne 0) {
-        throw "Authenticode verification failed for $Path"
-    }
-}
-
 try {
     if (-not (Test-Path -LiteralPath $CurrentInstaller)) {
         throw "Current installer not found: $CurrentInstaller"
     }
     if (-not [string]::IsNullOrWhiteSpace($PreviousInstaller) -and -not (Test-Path -LiteralPath $PreviousInstaller)) {
         throw "Previous installer not found: $PreviousInstaller"
-    }
-
-    if ($VerifySignatures) {
-        Assert-Signed $CurrentInstaller
     }
 
     if (-not [string]::IsNullOrWhiteSpace($PreviousInstaller)) {
@@ -122,11 +84,6 @@ try {
     if ($null -eq $uninstaller) {
         throw 'The installer did not create an uninstaller.'
     }
-    if ($VerifySignatures) {
-        Assert-Signed $expectedExecutable
-        Assert-Signed $uninstaller.FullName
-    }
-
     $uninstall = Start-Process -FilePath $uninstaller.FullName -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait -PassThru -WindowStyle Hidden
     if ($uninstall.ExitCode -ne 0) {
         throw "Uninstaller failed with exit code $($uninstall.ExitCode)."

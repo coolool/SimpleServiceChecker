@@ -3,22 +3,31 @@ param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$Version = '1.0.0',
     [ValidatePattern('^https://')]
-    [string]$UpdateLocationUrl = 'https://github.com/coolool/SimpleServiceChecker/releases',
+    [string]$UpdateLocationUrl = 'https://github.com/coolool/StarlingServiceChecker-Releases/releases/latest',
+    [ValidatePattern('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')]
+    [string]$SourceRepository = 'coolool/SimpleServiceChecker',
+    [ValidatePattern('^[0-9A-Fa-f]{40}$')]
+    [string]$SourceCommit,
     [string]$PublishDirectory,
     [string]$OutputDirectory,
     [string]$WebView2BootstrapperPath,
-    [switch]$SkipRestore,
-    [string]$SignToolPath,
-    [ValidatePattern('^[0-9A-Fa-f]{40}$')]
-    [string]$SigningCertificateThumbprint,
-    [ValidatePattern('^https://')]
-    [string]$TimestampUrl,
-    [switch]$AllowEphemeralTestSigning
+    [switch]$SkipRestore
 )
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $artifactRoot = [IO.Path]::GetFullPath((Join-Path $repoRoot 'artifacts'))
+
+if ([string]::IsNullOrWhiteSpace($SourceCommit)) {
+    $resolvedSourceCommit = & git -C $repoRoot rev-parse HEAD 2>$null
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($resolvedSourceCommit)) {
+        throw 'SourceCommit was not supplied and could not be resolved from the current Git checkout.'
+    }
+    $SourceCommit = ([string]$resolvedSourceCommit).Trim()
+    if ($SourceCommit -notmatch '^[0-9A-Fa-f]{40}$') {
+        throw 'The resolved source commit is not a 40-character Git commit SHA.'
+    }
+}
 
 function Resolve-ArtifactPath {
     param([string]$Path, [string]$DefaultRelativePath)
@@ -104,63 +113,10 @@ function Assert-MicrosoftBootstrapper {
     }
 }
 
-function Invoke-Sign {
-    param([string]$Path)
-
-    $arguments = @(
-        'sign', '/sha1', $SigningCertificateThumbprint,
-        '/fd', 'SHA256')
-    if (-not [string]::IsNullOrWhiteSpace($TimestampUrl)) {
-        $arguments += @('/td', 'SHA256', '/tr', $TimestampUrl)
-    }
-    $arguments += @('/d', 'Starling Service Checker', $Path)
-    Invoke-Checked $SignToolPath $arguments
-    Assert-Signed $Path
-}
-
-function Assert-Signed {
-    param([string]$Path)
-
-    if ($AllowEphemeralTestSigning) {
-        $signature = Get-AuthenticodeSignature -LiteralPath $Path
-        if ($null -eq $signature.SignerCertificate -or
-            $signature.SignerCertificate.Thumbprint -ne $SigningCertificateThumbprint -or
-            $signature.Status -in @(
-                [Management.Automation.SignatureStatus]::NotSigned,
-                [Management.Automation.SignatureStatus]::HashMismatch,
-                [Management.Automation.SignatureStatus]::NotSupportedFileFormat,
-                [Management.Automation.SignatureStatus]::Incompatible)) {
-            throw "Ephemeral Authenticode verification failed for $Path with status $($signature.Status)."
-        }
-        return
-    }
-
-    Invoke-Checked $SignToolPath @('verify', '/pa', '/all', $Path)
-}
-
 $publishPath = Resolve-ArtifactPath $PublishDirectory 'publish\win-x64'
 $outputPath = Resolve-ArtifactPath $OutputDirectory 'installer'
 $bootstrapperPath = Resolve-ArtifactPath $WebView2BootstrapperPath 'prerequisites\MicrosoftEdgeWebview2Setup.exe'
 $bootstrapperDirectory = Split-Path -Parent $bootstrapperPath
-$hasSignTool = -not [string]::IsNullOrWhiteSpace($SignToolPath)
-$hasCertificate = -not [string]::IsNullOrWhiteSpace($SigningCertificateThumbprint)
-if ($hasSignTool -xor $hasCertificate) {
-    throw 'SignToolPath and SigningCertificateThumbprint must be supplied together.'
-}
-$signingRequested = $hasSignTool -and $hasCertificate
-if (-not [string]::IsNullOrWhiteSpace($TimestampUrl) -and -not $signingRequested) {
-    throw 'TimestampUrl can only be used with SignToolPath and SigningCertificateThumbprint.'
-}
-if ($signingRequested -and [string]::IsNullOrWhiteSpace($TimestampUrl) -and -not $AllowEphemeralTestSigning) {
-    throw 'TimestampUrl is required for signed builds. Use AllowEphemeralTestSigning only with an ephemeral CI test certificate.'
-}
-if ($AllowEphemeralTestSigning -and (-not $signingRequested -or -not [string]::IsNullOrWhiteSpace($TimestampUrl))) {
-    throw 'AllowEphemeralTestSigning requires signing credentials and no TimestampUrl.'
-}
-if ($signingRequested -and -not (Test-Path -LiteralPath $SignToolPath -PathType Leaf)) {
-    throw "SignToolPath was not found: $SignToolPath"
-}
-
 Reset-GeneratedDirectory $publishPath
 Reset-GeneratedDirectory $outputPath
 $null = New-Item -ItemType Directory -Path $bootstrapperDirectory -Force
@@ -200,12 +156,6 @@ try {
     }
     Assert-MicrosoftBootstrapper $bootstrapperPath
 
-    if ($signingRequested) {
-        foreach ($fileToSign in @($applicationExecutable, $applicationDll, $coreDll)) {
-            Invoke-Sign $fileToSign
-        }
-    }
-
     $innoCompiler = Find-InnoCompiler
     $innoArguments = @(
         "/DAppVersion=$Version",
@@ -214,15 +164,6 @@ try {
         "/DOutputDir=$outputPath",
         "/DWebView2Bootstrapper=$bootstrapperPath",
         "/DUpdateLocationUrl=$UpdateLocationUrl")
-    if ($signingRequested) {
-        $innoArguments += '-sstarling=$p'
-        $innoArguments += '/DSignToolName=starling'
-        $innoArguments += "/DSignToolPath=$SignToolPath"
-        $innoArguments += "/DSigningCertificateThumbprint=$SigningCertificateThumbprint"
-        if (-not [string]::IsNullOrWhiteSpace($TimestampUrl)) {
-            $innoArguments += "/DSignTimestampUrl=$TimestampUrl"
-        }
-    }
     $innoArguments += 'installer\StarlingServiceChecker.iss'
     Invoke-Checked $innoCompiler $innoArguments
 
@@ -230,10 +171,6 @@ try {
     if (-not (Test-Path -LiteralPath $installerPath)) {
         throw "Installer output was not created: $installerPath"
     }
-    if ($signingRequested) {
-        Assert-Signed $installerPath
-    }
-
     $installerHash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $checksumPath = "$installerPath.sha256"
     [IO.File]::WriteAllText(
@@ -247,9 +184,11 @@ try {
         runtime = 'win-x64 self-contained'
         installer = [IO.Path]::GetFileName($installerPath)
         sha256 = $installerHash
-        signed = $signingRequested
-        timestamped = $signingRequested -and -not [string]::IsNullOrWhiteSpace($TimestampUrl)
+        signed = $false
+        timestamped = $false
         updateLocation = $UpdateLocationUrl
+        sourceRepository = $SourceRepository
+        sourceCommit = $SourceCommit.ToLowerInvariant()
         webView2 = 'Microsoft Evergreen bootstrapper, installed only when missing'
     } | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 
@@ -257,7 +196,7 @@ try {
         Installer = $installerPath
         Checksum = $checksumPath
         Manifest = $manifestPath
-        Signed = $signingRequested
+        Signed = $false
     }
 }
 finally {

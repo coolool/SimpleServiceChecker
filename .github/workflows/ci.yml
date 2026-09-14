@@ -46,6 +46,8 @@ jobs:
             -Version 0.9.0 `
             -PublishDirectory artifacts/publish-previous `
             -OutputDirectory artifacts/installer-previous `
+            -SourceRepository $env:GITHUB_REPOSITORY `
+            -SourceCommit $env:GITHUB_SHA `
             -SkipRestore
 
       - name: Build current per-user installer
@@ -55,6 +57,8 @@ jobs:
             -Version 1.0.0 `
             -PublishDirectory artifacts/publish-current `
             -OutputDirectory artifacts/installer `
+            -SourceRepository $env:GITHUB_REPOSITORY `
+            -SourceCommit $env:GITHUB_SHA `
             -SkipRestore
 
       - name: Verify unsigned release artifacts
@@ -63,13 +67,15 @@ jobs:
           ./build/Test-ReleaseArtifacts.ps1 `
             -ArtifactDirectory artifacts/installer-previous `
             -Version 0.9.0 `
-            -ExpectedUpdateLocationUrl https://github.com/coolool/SimpleServiceChecker/releases `
-            -ExpectedSigningState Unsigned
+            -ExpectedUpdateLocationUrl https://github.com/coolool/StarlingServiceChecker-Releases/releases/latest `
+            -ExpectedSourceRepository $env:GITHUB_REPOSITORY `
+            -ExpectedSourceCommit $env:GITHUB_SHA
           ./build/Test-ReleaseArtifacts.ps1 `
             -ArtifactDirectory artifacts/installer `
             -Version 1.0.0 `
-            -ExpectedUpdateLocationUrl https://github.com/coolool/SimpleServiceChecker/releases `
-            -ExpectedSigningState Unsigned
+            -ExpectedUpdateLocationUrl https://github.com/coolool/StarlingServiceChecker-Releases/releases/latest `
+            -ExpectedSourceRepository $env:GITHUB_REPOSITORY `
+            -ExpectedSourceCommit $env:GITHUB_SHA
 
       - name: Test installer lifecycle
         shell: pwsh
@@ -79,74 +85,6 @@ jobs:
             -PreviousVersion 0.9.0 `
             -CurrentInstaller artifacts/installer/StarlingServiceChecker-Setup-1.0.0.exe `
             -CurrentVersion 1.0.0
-
-      - name: Create ephemeral CI signing certificate
-        timeout-minutes: 2
-        shell: pwsh
-        run: |
-          $certificatePath = Join-Path $env:RUNNER_TEMP 'starling-ci-signing.cer'
-          $certificate = New-SelfSignedCertificate `
-            -Type CodeSigningCert `
-            -Subject 'CN=Starling Service Checker CI Test' `
-            -CertStoreLocation Cert:\CurrentUser\My `
-            -KeyAlgorithm RSA `
-            -KeyLength 2048 `
-            -HashAlgorithm SHA256 `
-            -NotAfter (Get-Date).AddDays(1)
-          Export-Certificate -Cert $certificate -FilePath $certificatePath | Out-Null
-
-          $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -File |
-            Sort-Object FullName -Descending |
-            Select-Object -First 1
-          if ($null -eq $signTool) { throw 'signtool.exe was not found on the runner.' }
-          "CI_SIGNING_CERT_SHA1=$($certificate.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "CI_SIGNING_CERT_PATH=$certificatePath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "SIGNTOOL_PATH=$($signTool.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Build with ephemeral Authenticode certificate
-        timeout-minutes: 5
-        shell: pwsh
-        run: |
-          ./build/Build-Installer.ps1 `
-            -Version 1.0.0 `
-            -PublishDirectory artifacts/publish-signed-test `
-            -OutputDirectory artifacts/installer-signed-test `
-            -SkipRestore `
-            -SignToolPath $env:SIGNTOOL_PATH `
-            -SigningCertificateThumbprint $env:CI_SIGNING_CERT_SHA1 `
-            -AllowEphemeralTestSigning
-
-      - name: Verify signed installer lifecycle
-        timeout-minutes: 3
-        shell: pwsh
-        run: |
-          ./build/Test-InstallerLifecycle.ps1 `
-            -CurrentInstaller artifacts/installer-signed-test/StarlingServiceChecker-Setup-1.0.0.exe `
-            -CurrentVersion 1.0.0 `
-            -VerifySignatures `
-            -SignToolPath $env:SIGNTOOL_PATH `
-            -ExpectedSignerThumbprint $env:CI_SIGNING_CERT_SHA1 `
-            -AllowUntrustedTestCertificate
-
-      - name: Verify signed release artifacts
-        shell: pwsh
-        run: |
-          ./build/Test-ReleaseArtifacts.ps1 `
-            -ArtifactDirectory artifacts/installer-signed-test `
-            -Version 1.0.0 `
-            -ExpectedUpdateLocationUrl https://github.com/coolool/SimpleServiceChecker/releases `
-            -ExpectedSigningState Signed
-
-      - name: Remove ephemeral CI signing certificate
-        if: always()
-        shell: pwsh
-        run: |
-          if ($env:CI_SIGNING_CERT_SHA1 -match '^[0-9A-Fa-f]{40}$') {
-            & certutil.exe -user -delstore My $env:CI_SIGNING_CERT_SHA1
-          }
-          if (-not [string]::IsNullOrWhiteSpace($env:CI_SIGNING_CERT_PATH)) {
-            Remove-Item -LiteralPath $env:CI_SIGNING_CERT_PATH -Force -ErrorAction SilentlyContinue
-          }
 
       - name: Upload Windows installer proof
         uses: actions/upload-artifact@v6

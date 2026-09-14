@@ -14,7 +14,7 @@
   #define WebView2Bootstrapper "..\artifacts\prerequisites\MicrosoftEdgeWebview2Setup.exe"
 #endif
 #ifndef UpdateLocationUrl
-  #define UpdateLocationUrl "https://github.com/coolool/SimpleServiceChecker/releases"
+  #define UpdateLocationUrl "https://github.com/coolool/StarlingServiceChecker-Releases/releases/latest"
 #endif
 
 [Setup]
@@ -50,16 +50,7 @@ VersionInfoDescription=Starling Service Checker Installer
 VersionInfoProductName=Starling Service Checker
 VersionInfoProductVersion={#AppVersion}
 VersionInfoVersion={#AppVersionNumeric}
-#ifdef SignToolName
-#ifdef SignTimestampUrl
-SignTool={#SignToolName} $q{#SignToolPath}$q sign /sha1 {#SigningCertificateThumbprint} /fd SHA256 /td SHA256 /tr $q{#SignTimestampUrl}$q /d $qStarling Service Checker$q $f
-#else
-SignTool={#SignToolName} $q{#SignToolPath}$q sign /sha1 {#SigningCertificateThumbprint} /fd SHA256 /d $qStarling Service Checker$q $f
-#endif
-SignedUninstaller=yes
-#else
 SignedUninstaller=no
-#endif
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked

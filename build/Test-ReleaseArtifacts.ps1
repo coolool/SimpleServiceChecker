@@ -6,9 +6,9 @@ param(
     [string]$ArtifactDirectory = 'artifacts\installer',
     [ValidatePattern('^https://')]
     [string]$ExpectedUpdateLocationUrl,
-    [ValidateSet('Any', 'Signed', 'Unsigned')]
-    [string]$ExpectedSigningState = 'Any',
-    [switch]$RequireTimestamp,
+    [string]$ExpectedSourceRepository,
+    [ValidatePattern('^[0-9A-Fa-f]{40}$')]
+    [string]$ExpectedSourceCommit,
     [switch]$RequireGitHubReleasesUpdateLocation
 )
 
@@ -68,6 +68,20 @@ if ($manifest.signed -isnot [bool] -or $manifest.timestamped -isnot [bool]) {
 if ($manifest.timestamped -and -not $manifest.signed) {
     throw 'Manifest cannot claim a timestamped installer when signed is false.'
 }
+Assert-Equal $manifest.signed $false 'Manifest signed policy'
+Assert-Equal $manifest.timestamped $false 'Manifest timestamp policy'
+if ([string]::IsNullOrWhiteSpace([string]$manifest.sourceRepository)) {
+    throw 'Manifest sourceRepository is required.'
+}
+if ([string]$manifest.sourceCommit -notmatch '^[0-9a-f]{40}$') {
+    throw 'Manifest sourceCommit must contain exactly 40 lowercase hexadecimal characters.'
+}
+if (-not [string]::IsNullOrWhiteSpace($ExpectedSourceRepository)) {
+    Assert-Equal ([string]$manifest.sourceRepository) $ExpectedSourceRepository 'Manifest source repository'
+}
+if (-not [string]::IsNullOrWhiteSpace($ExpectedSourceCommit)) {
+    Assert-Equal ([string]$manifest.sourceCommit) $ExpectedSourceCommit.ToLowerInvariant() 'Manifest source commit'
+}
 
 $updateUri = $null
 if (-not [Uri]::TryCreate([string]$manifest.updateLocation, [UriKind]::Absolute, [ref]$updateUri) -or
@@ -99,37 +113,18 @@ if ([string]::IsNullOrWhiteSpace($installerVersion) -or
 }
 
 $signature = Get-AuthenticodeSignature -LiteralPath $installerPath
-$hasSignature = $null -ne $signature.SignerCertificate -and
-    $signature.Status -notin @(
-        [Management.Automation.SignatureStatus]::NotSigned,
-        [Management.Automation.SignatureStatus]::HashMismatch,
-        [Management.Automation.SignatureStatus]::NotSupportedFileFormat,
-        [Management.Automation.SignatureStatus]::Incompatible)
-
-switch ($ExpectedSigningState) {
-    'Signed' {
-        if (-not $hasSignature -or -not $manifest.signed) {
-            throw 'Release artifacts were expected to be signed, but the installer or manifest is unsigned.'
-        }
-    }
-    'Unsigned' {
-        if ($hasSignature -or $manifest.signed) {
-            throw 'Release artifacts were expected to be unsigned, but the installer or manifest is signed.'
-        }
-    }
-}
-
-if ($RequireTimestamp) {
-    if (-not $hasSignature -or -not $manifest.timestamped -or $null -eq $signature.TimeStamperCertificate) {
-        throw 'Production release requires a signed and Authenticode-timestamped installer.'
-    }
+$hasSignature = $null -ne $signature.SignerCertificate
+if ($hasSignature -or $signature.Status -ne [Management.Automation.SignatureStatus]::NotSigned) {
+    throw "Approved release policy requires an unsigned installer, but Authenticode status is '$($signature.Status)'."
 }
 
 [pscustomobject]@{
     Version = $Version
     Installer = $installerPath
     Sha256 = $actualHash
-    Signed = $hasSignature
-    Timestamped = $null -ne $signature.TimeStamperCertificate
+    Signed = $false
+    Timestamped = $false
     UpdateLocation = [string]$manifest.updateLocation
+    SourceRepository = [string]$manifest.sourceRepository
+    SourceCommit = [string]$manifest.sourceCommit
 }

@@ -27,7 +27,7 @@ Coverage comes only from a locally selected Excel workbook. The application neve
 - A maintained .NET Excel library for read-only `.xlsx` parsing; Excel is not required.
 - Plain HTML, CSS, and JavaScript modules in the embedded view. Avoid a large front-end framework unless the proof demonstrates a concrete need.
 - Chart.js packaged with the application for terrain profiles; no runtime CDN dependency.
-- A simple per-user Windows installer. Version 1 uses a signed installer downloaded manually rather than an automatic updater.
+- A simple per-user Windows installer. Version 1 uses an intentionally unsigned installer downloaded manually rather than an automatic updater.
 
 The Google proof must validate an HTTPS virtual-host origin in WebView2 before this architecture is accepted. If Google does not consistently receive an authorizable referrer, stop and revise the hosting approach rather than requiring an unrestricted key.
 
@@ -239,13 +239,13 @@ Manual acceptance covers:
 
 ## 16. Distribution and updates
 
-GitHub Actions produces a normal signed Windows installer. A salesperson does not need Git, GitHub Desktop, .NET, Node.js, Excel, or any developer tools: they download the installer, run it, and follow a standard setup wizard.
+GitHub Actions produces a self-contained unsigned Windows installer. A salesperson does not need Git, GitHub Desktop, .NET, Node.js, Excel, or any developer tools: they download the installer, run it, and follow a standard setup wizard.
 
 Manual releases mean the installed application does not silently update itself. A `Check for updates` command opens the fixed latest-release page, and the user downloads and runs a newer installer when one is available. The existing installation continues to work until then.
 
-GitHub Releases is the selected update channel. If releases remain in the private source repository, every recipient needs repository read access and a GitHub sign-in. A separate public, binary-only release repository would permit link-only downloads while keeping the source repository private; the owner must explicitly choose visibility before general distribution.
+GitHub Releases is the selected update channel. Installers are published in the separate public, binary-only `coolool/StarlingServiceChecker-Releases` repository while application source remains private.
 
-Code signing is required before general distribution. Without it, Windows can show an `Unknown publisher` warning even when the installer is legitimate.
+The owner explicitly approved unsigned distribution on September 14, 2026. Windows may show an `Unknown publisher` or Microsoft Defender SmartScreen warning, and managed computers may block installation. Users must download only from the official public release repository and contact IT when company policy prevents installation; instructions must never tell users to disable security controls.
 
 ## 17. GitHub and releases
 
@@ -254,7 +254,7 @@ Code signing is required before general distribution. Without it, Windows can sh
 - GitHub Actions builds and tests on Windows without real API keys or coverage data.
 - Tests use synthetic workbook fixtures only.
 - Version tags create draft release artifacts for manual review.
-- General distribution waits for code signing and clean-machine acceptance.
+- General distribution waits for clean-machine acceptance and explicit owner approval of the release candidate.
 
 ## 18. Approved decisions
 
