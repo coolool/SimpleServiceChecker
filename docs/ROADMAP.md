@@ -55,7 +55,7 @@ Package 1 is accepted. Real workbook towers are intentionally deferred to Packag
 - [x] Parse finite and `*` fibre civic ranges and normalize address case, punctuation, spacing, street types, city, and postal code.
 - [x] Add Haversine distance, inclusive range filtering, deterministic candidate sorting, and sector filtering.
 - [x] Return deterministic, sales-readable row and column errors while retaining valid zero-height/range rows as non-candidate warnings.
-- [ ] Owner accepts Package 2 before Package 3 interface work begins.
+- [x] Owner accepts Package 2 before Package 3 interface work begins (September 14, 2026).
 
 #### Package 2 evidence
 
@@ -64,6 +64,8 @@ Package 1 is accepted. Real workbook towers are intentionally deferred to Packag
 - Supplied workbook: the full Package 2 parser loaded 224 tower rows and 16 fibre rows read-only outside Git. It reported only the two expected non-blocking data warnings: zero tower height at workbook row 103 and zero tower range at workbook row 142.
 - Isolation gate: every coverage result and validation rule is exercised in `SimpleServiceChecker.Core.Tests`, which references Core only and does not use WebView2 or Google.
 - The source workbook, company Google key, searched locations, and real tower values remain outside the repository and test output.
+- GitHub Actions independently restored, built, ran all 48 tests, checked JavaScript, and published the self-contained Windows proof successfully in pull request 2.
+- Owner approved Package 2 on September 14, 2026.
 
 Package 2 does not render the workbook towers. Package 3 will connect this accepted Core dataset to the sales interface and Google map.
 
