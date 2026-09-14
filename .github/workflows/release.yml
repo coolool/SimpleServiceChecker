@@ -33,6 +33,7 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Resolve and validate release version
+        id: release
         shell: pwsh
         run: |
           $tag = if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') { $env:REQUESTED_TAG } else { $env:GITHUB_REF_NAME }
@@ -43,6 +44,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Tag $tag does not exist." }
           "RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "RELEASE_VERSION=$($tag.Substring(1))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "version=$($tag.Substring(1))" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Require protected release configuration
         shell: pwsh
@@ -118,8 +120,12 @@ jobs:
             "artifacts/installer/StarlingServiceChecker-Setup-$env:RELEASE_VERSION.exe.sha256",
             "artifacts/installer/StarlingServiceChecker-$env:RELEASE_VERSION-release.json"
           )
-          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY *> $null
+          $existingReleaseJson = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft 2>$null
           if ($LASTEXITCODE -eq 0) {
+            $existingRelease = $existingReleaseJson | ConvertFrom-Json
+            if (-not $existingRelease.isDraft) {
+              throw "Release $env:RELEASE_TAG is already published. Refusing to replace its assets."
+            }
             gh release upload $env:RELEASE_TAG @assets --repo $env:GITHUB_REPOSITORY --clobber
             if ($LASTEXITCODE -ne 0) { throw 'Could not update draft release assets.' }
           }
@@ -131,7 +137,7 @@ jobs:
       - name: Upload signed release evidence
         uses: actions/upload-artifact@v6
         with:
-          name: StarlingServiceChecker-${{ env.RELEASE_VERSION }}-signed
+          name: StarlingServiceChecker-${{ steps.release.outputs.version }}-signed
           path: artifacts/installer
           if-no-files-found: error
 

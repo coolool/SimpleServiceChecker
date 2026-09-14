@@ -35,7 +35,7 @@ jobs:
       - name: Test
         run: dotnet test SimpleServiceChecker.sln --configuration Release --no-build
 
-      - name: Publish self-contained Windows application
+      - name: Build previous-version installer fixture
         shell: pwsh
         run: |
           ./build/Build-Installer.ps1 `
