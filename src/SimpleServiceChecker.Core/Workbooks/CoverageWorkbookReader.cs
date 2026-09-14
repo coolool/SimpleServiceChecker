@@ -14,12 +14,12 @@ public static partial class CoverageWorkbookReader
 
         try
         {
-            using var stream = new FileStream(
+            using FileStream stream = new FileStream(
                 filePath,
                 FileMode.Open,
                 FileAccess.Read,
                 FileShare.ReadWrite | FileShare.Delete);
-            using var workbook = new XLWorkbook(stream);
+            using XLWorkbook workbook = new XLWorkbook(stream);
             return Load(workbook, Path.GetFileName(filePath), cancellationToken);
         }
         catch (OperationCanceledException)
@@ -39,15 +39,17 @@ public static partial class CoverageWorkbookReader
 
     public static Task<CoverageWorkbookLoadResult> LoadAsync(
         string filePath,
-        CancellationToken cancellationToken = default) =>
-        Task.Run(() => Load(filePath, cancellationToken), cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        return Task.Run(() => Load(filePath, cancellationToken), cancellationToken);
+    }
 
     private static CoverageWorkbookLoadResult Load(
         XLWorkbook workbook,
         string sourceFileName,
         CancellationToken cancellationToken)
     {
-        var issues = new List<WorkbookValidationIssue>();
+        List<WorkbookValidationIssue> issues = new List<WorkbookValidationIssue>();
         var towerSheet = GetRequiredSheet(workbook, WorkbookProbe.TowerSheetName, issues);
         var fibreSheet = GetRequiredSheet(workbook, WorkbookProbe.FibreSheetName, issues);
 
@@ -65,12 +67,9 @@ public static partial class CoverageWorkbookReader
 
         var towers = ReadTowers(towerSheet!, towerHeaders!, issues, cancellationToken);
         var fibreRanges = ReadFibreRanges(fibreSheet!, fibreHeaders!, issues, cancellationToken);
-        if (issues.Any(issue => issue.Severity == WorkbookValidationSeverity.Error))
-        {
-            return new CoverageWorkbookLoadResult(null, issues);
-        }
-
-        return new CoverageWorkbookLoadResult(
+        return issues.Any(issue => issue.Severity == WorkbookValidationSeverity.Error)
+            ? new CoverageWorkbookLoadResult(null, issues)
+            : new CoverageWorkbookLoadResult(
             new CoverageDataset(sourceFileName, towers, fibreRanges),
             issues);
     }
@@ -115,7 +114,7 @@ public static partial class CoverageWorkbookReader
     {
         var issueCount = issues.Count;
         var lastColumn = worksheet.LastColumnUsed(XLCellsUsedOptions.Contents)?.ColumnNumber() ?? 0;
-        var headers = new Dictionary<string, int>(StringComparer.Ordinal);
+        Dictionary<string, int> headers = new Dictionary<string, int>(StringComparer.Ordinal);
         for (var columnNumber = 1; columnNumber <= lastColumn; columnNumber++)
         {
             var header = worksheet.Cell(1, columnNumber).GetString().Trim();
@@ -159,7 +158,7 @@ public static partial class CoverageWorkbookReader
         ICollection<WorkbookValidationIssue> issues,
         CancellationToken cancellationToken)
     {
-        var towers = new List<TowerCoverage>();
+        List<TowerCoverage> towers = new List<TowerCoverage>();
         var lastRow = worksheet.LastRowUsed(XLCellsUsedOptions.Contents)?.RowNumber() ?? 1;
         for (var rowNumber = 2; rowNumber <= lastRow; rowNumber++)
         {
@@ -250,7 +249,7 @@ public static partial class CoverageWorkbookReader
         ICollection<WorkbookValidationIssue> issues,
         CancellationToken cancellationToken)
     {
-        var ranges = new List<FibreCoverageRange>();
+        List<FibreCoverageRange> ranges = new List<FibreCoverageRange>();
         var lastRow = worksheet.LastRowUsed(XLCellsUsedOptions.Contents)?.RowNumber() ?? 1;
         for (var rowNumber = 2; rowNumber <= lastRow; rowNumber++)
         {
@@ -323,8 +322,10 @@ public static partial class CoverageWorkbookReader
         return ranges;
     }
 
-    private static bool IsEmptyRow(IXLWorksheet worksheet, int rowNumber, IEnumerable<int> columnNumbers) =>
-        columnNumbers.All(columnNumber => worksheet.Cell(rowNumber, columnNumber).IsEmpty());
+    private static bool IsEmptyRow(IXLWorksheet worksheet, int rowNumber, IEnumerable<int> columnNumbers)
+    {
+        return columnNumbers.All(columnNumber => worksheet.Cell(rowNumber, columnNumber).IsEmpty());
+    }
 
     private static string? ReadRequiredText(
         IXLWorksheet worksheet,
@@ -550,7 +551,8 @@ public static partial class CoverageWorkbookReader
         int rowNumber,
         string columnName,
         string guidance,
-        ICollection<WorkbookValidationIssue> issues) =>
+        ICollection<WorkbookValidationIssue> issues)
+    {
         issues.Add(new WorkbookValidationIssue(
             WorkbookValidationCode.NumberOutOfRange,
             WorkbookValidationSeverity.Error,
@@ -558,12 +560,14 @@ public static partial class CoverageWorkbookReader
             sheetName,
             rowNumber,
             columnName));
+    }
 
     private static void AddZeroCandidateWarning(
         string sheetName,
         int rowNumber,
         string columnName,
-        ICollection<WorkbookValidationIssue> issues) =>
+        ICollection<WorkbookValidationIssue> issues)
+    {
         issues.Add(new WorkbookValidationIssue(
             WorkbookValidationCode.ZeroDisablesCandidate,
             WorkbookValidationSeverity.Warning,
@@ -571,6 +575,7 @@ public static partial class CoverageWorkbookReader
             sheetName,
             rowNumber,
             columnName));
+    }
 
     private static string SafeDisplay(IXLCell cell)
     {

@@ -18,7 +18,7 @@ internal sealed class CoverageWorkbookTestFile : IDisposable
         Action<XLWorkbook>? configure = null)
     {
         var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"ssc-{Guid.NewGuid():N}.xlsx");
-        using var workbook = new XLWorkbook();
+        using XLWorkbook workbook = new XLWorkbook();
         var towerSheet = workbook.AddWorksheet(WorkbookProbe.TowerSheetName);
         AddHeaders(towerSheet, towerHeaders ?? WorkbookProbe.TowerHeaders);
         SetTowerRow(towerSheet, 2);
@@ -70,7 +70,7 @@ internal sealed class CoverageWorkbookTestFile : IDisposable
         var cell = sheet.Cell(rowNumber, headerCell.Address.ColumnNumber);
         if (value is null)
         {
-            cell.Clear(XLClearOptions.Contents);
+            _ = cell.Clear(XLClearOptions.Contents);
             return;
         }
 

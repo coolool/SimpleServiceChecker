@@ -1,4 +1,3 @@
-using ClosedXML.Excel;
 using SimpleServiceChecker.Core.Workbooks;
 
 namespace SimpleServiceChecker.Core.Tests;
@@ -10,7 +9,7 @@ public sealed class CoverageWorkbookReaderTests
     {
         var towerHeaders = WorkbookProbe.TowerHeaders.Reverse().ToArray();
         towerHeaders[Array.IndexOf(towerHeaders, "Tower Name")] = "  Tower Name  ";
-        using var file = CoverageWorkbookTestFile.Create(
+        using CoverageWorkbookTestFile file = CoverageWorkbookTestFile.Create(
             towerHeaders,
             configure: workbook =>
             {
@@ -27,17 +26,17 @@ public sealed class CoverageWorkbookReaderTests
         Assert.Equal(125, tower.HeightFeet);
         Assert.True(tower.IsOmnidirectional);
         Assert.Null(tower.ApDirectionDegrees);
-        Assert.Equal(System.IO.Path.GetFileName(file.Path), result.Dataset.SourceFileName);
-        Assert.Single(result.Dataset.FibreRanges);
+        Assert.Equal(Path.GetFileName(file.Path), result.Dataset.SourceFileName);
+        _ = Assert.Single(result.Dataset.FibreRanges);
     }
 
     [Fact]
     public void Load_ReportsMissingSheetAndRequiredHeader()
     {
-        using var missingSheet = CoverageWorkbookTestFile.Create(
+        using CoverageWorkbookTestFile missingSheet = CoverageWorkbookTestFile.Create(
             configure: workbook => workbook.Worksheet(WorkbookProbe.FibreSheetName).Delete());
-        using var missingHeader = CoverageWorkbookTestFile.Create(
-            towerHeaders: WorkbookProbe.TowerHeaders.Where(header => header != "Lat").ToArray());
+        using CoverageWorkbookTestFile missingHeader = CoverageWorkbookTestFile.Create(
+            towerHeaders: [.. WorkbookProbe.TowerHeaders.Where(header => header != "Lat")]);
 
         var sheetResult = CoverageWorkbookReader.Load(missingSheet.Path);
         var headerResult = CoverageWorkbookReader.Load(missingHeader.Path);
@@ -50,7 +49,7 @@ public sealed class CoverageWorkbookReaderTests
     public void Load_ReportsDuplicateHeaders()
     {
         var headers = WorkbookProbe.TowerHeaders.Concat(["Tower Name"]).ToArray();
-        using var file = CoverageWorkbookTestFile.Create(towerHeaders: headers);
+        using CoverageWorkbookTestFile file = CoverageWorkbookTestFile.Create(towerHeaders: headers);
 
         var result = CoverageWorkbookReader.Load(file.Path);
 
@@ -61,7 +60,7 @@ public sealed class CoverageWorkbookReaderTests
     [Fact]
     public void Load_ReportsDuplicateNormalizedSheetNames()
     {
-        using var file = CoverageWorkbookTestFile.Create(configure: workbook =>
+        using CoverageWorkbookTestFile file = CoverageWorkbookTestFile.Create(configure: workbook =>
             workbook.AddWorksheet($"{WorkbookProbe.TowerSheetName} "));
 
         var result = CoverageWorkbookReader.Load(file.Path);
@@ -72,7 +71,7 @@ public sealed class CoverageWorkbookReaderTests
     [Fact]
     public void Load_ReportsBlankRequiredValue()
     {
-        using var file = CoverageWorkbookTestFile.Create(configure: workbook =>
+        using CoverageWorkbookTestFile file = CoverageWorkbookTestFile.Create(configure: workbook =>
             CoverageWorkbookTestFile.Set(workbook.Worksheet(WorkbookProbe.TowerSheetName), 2, "Tower Name", null));
 
         var result = CoverageWorkbookReader.Load(file.Path);
@@ -86,7 +85,7 @@ public sealed class CoverageWorkbookReaderTests
     [Fact]
     public void Load_ReportsOriginalRowAndColumnForInvalidValues()
     {
-        using var file = CoverageWorkbookTestFile.Create(configure: workbook =>
+        using CoverageWorkbookTestFile file = CoverageWorkbookTestFile.Create(configure: workbook =>
         {
             var sheet = workbook.Worksheet(WorkbookProbe.TowerSheetName);
             CoverageWorkbookTestFile.SetTowerRow(sheet, 4);
@@ -104,7 +103,7 @@ public sealed class CoverageWorkbookReaderTests
     [Fact]
     public void Load_AcceptsCoordinateBoundariesAndWarnsThatZeroDisablesCandidate()
     {
-        using var file = CoverageWorkbookTestFile.Create(configure: workbook =>
+        using CoverageWorkbookTestFile file = CoverageWorkbookTestFile.Create(configure: workbook =>
         {
             var sheet = workbook.Worksheet(WorkbookProbe.TowerSheetName);
             CoverageWorkbookTestFile.Set(sheet, 2, "Tower Height", 0d);
@@ -131,7 +130,7 @@ public sealed class CoverageWorkbookReaderTests
     [InlineData("lon", 180.0001)]
     public void Load_RejectsCoordinatesOutsideBoundaries(string column, double value)
     {
-        using var file = CoverageWorkbookTestFile.Create(configure: workbook =>
+        using CoverageWorkbookTestFile file = CoverageWorkbookTestFile.Create(configure: workbook =>
             CoverageWorkbookTestFile.Set(workbook.Worksheet(WorkbookProbe.TowerSheetName), 2, column, value));
 
         var result = CoverageWorkbookReader.Load(file.Path);
@@ -142,8 +141,8 @@ public sealed class CoverageWorkbookReaderTests
     [Fact]
     public void Load_AllowsBlankDirectionFor360ButRequiresItForASector()
     {
-        using var omnidirectional = CoverageWorkbookTestFile.Create();
-        using var sector = CoverageWorkbookTestFile.Create(configure: workbook =>
+        using CoverageWorkbookTestFile omnidirectional = CoverageWorkbookTestFile.Create();
+        using CoverageWorkbookTestFile sector = CoverageWorkbookTestFile.Create(configure: workbook =>
             CoverageWorkbookTestFile.Set(workbook.Worksheet(WorkbookProbe.TowerSheetName), 2, "AP Coverage (°)", 90d));
 
         var omniResult = CoverageWorkbookReader.Load(omnidirectional.Path);
@@ -156,7 +155,7 @@ public sealed class CoverageWorkbookReaderTests
     [Fact]
     public void Load_ParsesOpenEndedFibreRangeAndKeepsSpeedText()
     {
-        using var file = CoverageWorkbookTestFile.Create(configure: workbook =>
+        using CoverageWorkbookTestFile file = CoverageWorkbookTestFile.Create(configure: workbook =>
         {
             var sheet = workbook.Worksheet(WorkbookProbe.FibreSheetName);
             CoverageWorkbookTestFile.Set(sheet, 2, "Start_Civic_Num", " 100 ");
@@ -177,7 +176,7 @@ public sealed class CoverageWorkbookReaderTests
     [Fact]
     public void Load_RejectsReversedFibreRangeAndInvalidSpeedText()
     {
-        using var file = CoverageWorkbookTestFile.Create(configure: workbook =>
+        using CoverageWorkbookTestFile file = CoverageWorkbookTestFile.Create(configure: workbook =>
         {
             var sheet = workbook.Worksheet(WorkbookProbe.FibreSheetName);
             CoverageWorkbookTestFile.Set(sheet, 2, "Start_Civic_Num", 200d);
@@ -194,18 +193,18 @@ public sealed class CoverageWorkbookReaderTests
     [Fact]
     public async Task LoadAsync_ObservesCancellation()
     {
-        using var file = CoverageWorkbookTestFile.Create();
-        using var cancellation = new CancellationTokenSource();
+        using CoverageWorkbookTestFile file = CoverageWorkbookTestFile.Create();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
         await cancellation.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => CoverageWorkbookReader.LoadAsync(file.Path, cancellation.Token));
     }
 
     [Fact]
     public void Load_ReturnsSafeErrorForMissingFile()
     {
-        var result = CoverageWorkbookReader.Load(System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.xlsx"));
+        var result = CoverageWorkbookReader.Load(Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.xlsx"));
 
         var issue = Assert.Single(result.Errors);
         Assert.Equal(WorkbookValidationCode.FileReadFailed, issue.Code);
@@ -242,6 +241,8 @@ public sealed class CoverageWorkbookReaderTests
             });
     }
 
-    private static string JoinIssues(CoverageWorkbookLoadResult result) =>
-        string.Join(Environment.NewLine, result.Issues.Select(issue => issue.Message));
+    private static string JoinIssues(CoverageWorkbookLoadResult result)
+    {
+        return string.Join(Environment.NewLine, result.Issues.Select(issue => issue.Message));
+    }
 }

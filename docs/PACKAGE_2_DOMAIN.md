@@ -35,4 +35,4 @@ The reader never edits the source file. It reports only the source filename, not
 
 ## Package boundary
 
-The Package 1 application continues to render synthetic tower and profile data. Package 3 will load an accepted `CoverageDataset`, display fibre results, draw real tower markers and ranges, and return candidate cards. Package 2 deliberately contains no map or interface wiring.
+Package 3 now consumes the accepted `CoverageDataset`, while Package 2 itself deliberately retains no map or interface dependency.

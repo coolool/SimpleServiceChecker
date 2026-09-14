@@ -39,14 +39,14 @@ public static class WorkbookProbe
 
         try
         {
-            using var stream = new FileStream(
+            using FileStream stream = new FileStream(
                 filePath,
                 FileMode.Open,
                 FileAccess.Read,
                 FileShare.ReadWrite | FileShare.Delete);
-            using var workbook = new XLWorkbook(stream);
-            var sheets = new List<WorksheetProbeResult>();
-            var errors = new List<string>();
+            using XLWorkbook workbook = new XLWorkbook(stream);
+            List<WorksheetProbeResult> sheets = new List<WorksheetProbeResult>();
+            List<string> errors = new List<string>();
 
             ProbeSheet(workbook, TowerSheetName, TowerHeaders, sheets, errors);
             ProbeSheet(workbook, FibreSheetName, FibreHeaders, sheets, errors);
@@ -75,7 +75,7 @@ public static class WorkbookProbe
         var lastColumn = worksheet.LastColumnUsed()?.ColumnNumber() ?? 0;
         string[] actualHeaders = lastColumn == 0
             ? []
-            : worksheet.Row(1).Cells(1, lastColumn).Select(cell => cell.GetString().Trim()).ToArray();
+            : [.. worksheet.Row(1).Cells(1, lastColumn).Select(cell => cell.GetString().Trim())];
         var missingHeaders = requiredHeaders.Except(actualHeaders, StringComparer.Ordinal).ToArray();
         var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
         var dataRowCount = Math.Max(0, lastRow - 1);

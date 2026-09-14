@@ -1,6 +1,8 @@
+using System.Text.Json;
 using SimpleServiceChecker.App.Bridge;
 using SimpleServiceChecker.App.Infrastructure;
 using SimpleServiceChecker.App.Security;
+using SimpleServiceChecker.Core.Coverage;
 
 namespace SimpleServiceChecker.App.Tests;
 
@@ -9,7 +11,7 @@ public sealed class BridgeMessageRouterTests
     [Fact]
     public void TryParse_AcceptsAnAllowedVersionedMessage()
     {
-        const string json = """
+        const string json = /*lang=json,strict*/ """
             {"version":1,"type":"chooseWorkbook","requestId":"request-1","payload":{}}
             """;
 
@@ -50,7 +52,7 @@ public sealed class BridgeMessageRouterTests
     {
         var directory = Path.Combine(Path.GetTempPath(), $"ssc-key-{Guid.NewGuid():N}");
         var path = Path.Combine(directory, "google-key.bin");
-        var store = new GoogleKeyStore(path);
+        GoogleKeyStore store = new GoogleKeyStore(path);
 
         try
         {
@@ -74,16 +76,62 @@ public sealed class BridgeMessageRouterTests
 
     [Theory]
     [InlineData("not json")]
-    [InlineData("{\"version\":2,\"type\":\"chooseWorkbook\",\"requestId\":\"request-1\",\"payload\":{}}")]
-    [InlineData("{\"version\":1,\"type\":\"deleteEverything\",\"requestId\":\"request-1\",\"payload\":{}}")]
-    [InlineData("{\"version\":1,\"type\":\"chooseWorkbook\",\"requestId\":\"\",\"payload\":{}}")]
-    [InlineData("{\"version\":1,\"type\":\"chooseWorkbook\",\"requestId\":\"request-1\",\"payload\":[]}")]
+    [InlineData(/*lang=json,strict*/ "{\"version\":2,\"type\":\"chooseWorkbook\",\"requestId\":\"request-1\",\"payload\":{}}")]
+    [InlineData(/*lang=json,strict*/ "{\"version\":1,\"type\":\"deleteEverything\",\"requestId\":\"request-1\",\"payload\":{}}")]
+    [InlineData(/*lang=json,strict*/ "{\"version\":1,\"type\":\"chooseWorkbook\",\"requestId\":\"\",\"payload\":{}}")]
+    [InlineData(/*lang=json,strict*/ "{\"version\":1,\"type\":\"chooseWorkbook\",\"requestId\":\"request-1\",\"payload\":[]}")]
     public void TryParse_RejectsInvalidMessages(string json)
     {
         var success = BridgeMessageRouter.TryParse(json, out var message, out var error);
 
         Assert.False(success);
         Assert.Null(message);
+        Assert.NotEmpty(error);
+    }
+
+    [Fact]
+    public void LocationParser_TransfersStructuredGoogleAddressForFibreMatching()
+    {
+        using JsonDocument document = System.Text.Json.JsonDocument.Parse("""
+            {
+              "revision": 7,
+              "latitude": 46.521,
+              "longitude": -84.334,
+              "source": "places",
+              "address": {
+                "civicNumber": "125",
+                "route": "Queen Street East",
+                "city": "Sault Ste. Marie",
+                "postalCode": "P6A 1A1",
+                "formattedAddress": "125 Queen Street East, Sault Ste. Marie, ON"
+              }
+            }
+            """);
+
+        var success = LocationSelectionRequestParser.TryParse(document.RootElement, out var request, out var error);
+
+        Assert.True(success, error);
+        Assert.NotNull(request);
+        Assert.Equal(7, request.Revision);
+        Assert.Equal(new GeoCoordinate(46.521, -84.334), request.Location);
+        Assert.Equal("Queen East", request.FibreAddress.StreetName);
+        Assert.Equal("ST", request.FibreAddress.StreetType);
+        Assert.Equal(125, request.FibreAddress.CivicNumber);
+    }
+
+    [Theory]
+    [InlineData(/*lang=json,strict*/ "{\"revision\":0,\"latitude\":46,\"longitude\":-84}")]
+    [InlineData(/*lang=json,strict*/ "{\"revision\":1,\"latitude\":91,\"longitude\":-84}")]
+    [InlineData(/*lang=json,strict*/ "{\"revision\":1,\"latitude\":46,\"longitude\":-181}")]
+    [InlineData(/*lang=json,strict*/ "{\"revision\":1,\"latitude\":\"north\",\"longitude\":-84}")]
+    public void LocationParser_RejectsInvalidCoordinates(string json)
+    {
+        using JsonDocument document = System.Text.Json.JsonDocument.Parse(json);
+
+        var success = LocationSelectionRequestParser.TryParse(document.RootElement, out var request, out var error);
+
+        Assert.False(success);
+        Assert.Null(request);
         Assert.NotEmpty(error);
     }
 }

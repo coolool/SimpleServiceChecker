@@ -11,7 +11,7 @@ public sealed class GoogleKeyStore(string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
         var directory = Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException("The key file has no parent directory.");
-        Directory.CreateDirectory(directory);
+        _ = Directory.CreateDirectory(directory);
 
         var plainText = Encoding.UTF8.GetBytes(apiKey);
         try

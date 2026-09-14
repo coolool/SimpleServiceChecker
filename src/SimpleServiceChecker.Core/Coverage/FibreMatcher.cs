@@ -22,11 +22,15 @@ public sealed record FibreMatchResult(
     FibreCoverageRange? Match,
     IReadOnlyList<string> Warnings)
 {
-    public static FibreMatchResult AddressRequired() =>
-        new(FibreAvailabilityStatus.AddressRequired, null, []);
+    public static FibreMatchResult AddressRequired()
+    {
+        return new(FibreAvailabilityStatus.AddressRequired, null, []);
+    }
 
-    public static FibreMatchResult NotListed() =>
-        new(FibreAvailabilityStatus.NotListed, null, []);
+    public static FibreMatchResult NotListed()
+    {
+        return new(FibreAvailabilityStatus.NotListed, null, []);
+    }
 }
 
 public static class FibreMatcher
@@ -136,12 +140,12 @@ public static class AddressNormalizer
             return string.Empty;
         }
 
-        var builder = new StringBuilder(value.Length);
+        StringBuilder builder = new StringBuilder(value.Length);
         foreach (var character in value.Trim().Normalize(NormalizationForm.FormKC))
         {
             if (char.IsLetterOrDigit(character))
             {
-                builder.Append(char.ToUpperInvariant(character));
+                _ = builder.Append(char.ToUpperInvariant(character));
             }
         }
 
@@ -154,13 +158,37 @@ public static class AddressNormalizer
         return StreetTypes.TryGetValue(normalized, out var canonical) ? canonical : normalized;
     }
 
-    public static string NormalizePostalCode(string? value)
+    public static bool TrySplitStreetRoute(string? route, out string streetName, out string streetType)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        streetName = string.Empty;
+        streetType = string.Empty;
+        if (string.IsNullOrWhiteSpace(route))
         {
-            return string.Empty;
+            return false;
         }
 
-        return string.Concat(value.Where(char.IsLetterOrDigit)).ToUpperInvariant();
+        var parts = route
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+        for (var index = parts.Count - 1; index >= 1; index--)
+        {
+            var normalizedPart = NormalizeWords(parts[index]);
+            if (!StreetTypes.TryGetValue(normalizedPart, out var canonicalType))
+            {
+                continue;
+            }
+
+            streetType = canonicalType;
+            parts.RemoveAt(index);
+            streetName = string.Join(' ', parts);
+            return streetName.Length > 0;
+        }
+
+        return false;
+    }
+
+    public static string NormalizePostalCode(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? string.Empty : string.Concat(value.Where(char.IsLetterOrDigit)).ToUpperInvariant();
     }
 }

@@ -40,12 +40,32 @@ Package 1 is accepted. Real workbook towers are intentionally deferred to Packag
 
 ## Phase 2 - Sales workflow
 
-- [ ] Recreate the simplified Service Checker visual design.
-- [ ] Add address, coordinate, and map-pin location selection.
+- [x] Recreate the simplified Service Checker visual design (Package 3 implementation).
+- [x] Add address, coordinate, and map-pin location selection (Package 3 implementation).
 - [x] Add fibre address-range matching in Core (September 14, 2026).
 - [x] Add tower range filtering and candidate ordering in Core (September 14, 2026).
-- [ ] Add tower circles, paths, terrain profiles, and Fresnel-zone clearance.
-- [ ] Add clear unavailable, incomplete-data, provider-error, and offline states.
+- [ ] Add tower circles, paths, terrain profiles, and Fresnel-zone clearance. Tower circles and candidate paths are implemented; terrain and Fresnel profiles remain Package 4.
+- [x] Add clear unavailable, incomplete-data, provider-error, and offline states for the sales-map workflow (Package 3 implementation).
+
+### Package 3 - Sales interface and map workflow
+
+- [x] Persist and automatically reload a fully validated active workbook for first-run setup.
+- [x] Add the resizable warm sidebar, full-window map, Settings screen, address search, decimal coordinates, map click, and draggable customer pin.
+- [x] Transfer structured Google address components to native fibre matching without retaining searched locations.
+- [x] Render fibre status before distance-ordered wireless candidate cards.
+- [x] Draw real workbook tower points, published-range circles, and candidate paths with a non-colour-only legend.
+- [x] Keep local fibre and tower calculations usable from known coordinates when Google is unavailable.
+- [x] Cancel superseded location calculations and reject stale browser results by revision.
+- [x] Add keyboard labels, visible focus, keyboard sidebar resizing, and compact laptop-height behavior.
+- [x] Owner accepts Package 3 before Package 4 terrain and Fresnel work begins (September 14, 2026).
+
+#### Package 3 implementation evidence
+
+- Release build succeeds with zero warnings and zero errors on Windows 10 x64.
+- Automated tests: 58 pass across Core and App, including validated workbook activation/reload, invalid-replacement retention, structured route transfer, invalid coordinate rejection, fibre matching, and wireless candidate calculations.
+- Browser JavaScript passes the syntax check. The normal workflow does not request Elevation; Package 4 will request it only when a candidate profile is opened.
+- The source workbook path, Google API key, selected address, and coordinates are neither logged nor written to application preferences. Only the encrypted key and validated local workbook copy persist.
+- Owner completed a live functional review and approved Package 3 on September 14, 2026. No screenshot evidence is claimed for this acceptance.
 
 ### Package 2 - Coverage domain and workbook validation
 
@@ -67,7 +87,7 @@ Package 1 is accepted. Real workbook towers are intentionally deferred to Packag
 - GitHub Actions independently restored, built, ran all 48 tests, checked JavaScript, and published the self-contained Windows proof successfully in pull request 2.
 - Owner approved Package 2 on September 14, 2026.
 
-Package 2 does not render the workbook towers. Package 3 will connect this accepted Core dataset to the sales interface and Google map.
+Package 2 remains the accepted map-independent domain layer. Package 3 now connects it to the sales interface and Google map.
 
 ## Phase 3 - Spreadsheet management
 

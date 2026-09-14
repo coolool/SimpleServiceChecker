@@ -64,7 +64,7 @@ public sealed class WorkbookProbeTests
             var result = WorkbookProbe.Probe(path);
 
             Assert.False(result.IsValid);
-            Assert.Single(result.Errors);
+            _ = Assert.Single(result.Errors);
             Assert.StartsWith("The workbook could not be read", result.Errors[0], StringComparison.Ordinal);
         }
         finally
@@ -92,12 +92,12 @@ public sealed class WorkbookProbeTests
     private static string CreateWorkbook(string? omitFibreHeader = null)
     {
         var path = Path.Combine(Path.GetTempPath(), $"ssc-{Guid.NewGuid():N}.xlsx");
-        using var workbook = new XLWorkbook();
+        using XLWorkbook workbook = new XLWorkbook();
         AddSheet(workbook, WorkbookProbe.TowerSheetName, WorkbookProbe.TowerHeaders, 2);
         AddSheet(
             workbook,
             WorkbookProbe.FibreSheetName,
-            WorkbookProbe.FibreHeaders.Where(header => header != omitFibreHeader).ToArray(),
+            [.. WorkbookProbe.FibreHeaders.Where(header => header != omitFibreHeader)],
             1);
         workbook.SaveAs(path);
         return path;
