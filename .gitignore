@@ -32,7 +32,7 @@ publish/
 *.exe
 
 # Test and local application output
-coverage/
+/coverage/
 TestResults/
 local-data/
 logs/
