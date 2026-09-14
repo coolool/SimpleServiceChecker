@@ -151,7 +151,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - The selected source path is never stored in the manifest or preferences. The source is copied using shared read access for validation or explicit reload and is never watched or edited.
 - The owner approved Package 5 on September 14, 2026 after reviewing the live self-contained build. No screenshot evidence is claimed for this acceptance.
 - [x] Add the owner-requested terrain-profile minimize control, collapsing the live plot to a restorable bar at the bottom of the map without another elevation request.
-- [ ] Owner accepts the terrain-profile minimize follow-up before Package 6 begins.
+- [x] Owner accepts the terrain-profile minimize follow-up before Package 6 begins (September 14, 2026).
 
 ## Phase 4 - Installer and release
 
