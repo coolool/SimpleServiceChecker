@@ -5,6 +5,7 @@
 - `installer/StarlingServiceChecker.iss` — stable per-user Inno Setup installer definition.
 - `build/Build-Installer.ps1` — self-contained publish, Microsoft bootstrapper verification, optional signing, installer compilation, SHA-256 checksum, and release manifest.
 - `build/Test-InstallerLifecycle.ps1` — unattended install, upgrade, rollback, signature, and uninstall checks in an isolated program directory.
+- `build/Test-ReleaseArtifacts.ps1` — fail-closed version, manifest, update-location, checksum, signing-state, and production timestamp verification.
 - `.github/workflows/ci.yml` — unsigned installer and lifecycle proof on each pull request and `main` update.
 - `build/Test-RepositorySafety.ps1` — fail-closed tracked-file scan for prohibited workbooks, databases, generated binaries, logs, private keys, and Google-key-shaped values without printing matched contents.
 - `.github/workflows/release.yml` — protected signing and draft-release workflow for existing `vMAJOR.MINOR.PATCH` tags.
@@ -34,6 +35,8 @@ The version 1 installer is online-only. It deliberately does not bundle the much
 Pull-request CI creates a one-day, self-signed code-signing certificate on the disposable Windows runner and exercises the same application, installer, signed-uninstaller, and signature commands used by production. It verifies integrity and the exact expected test-certificate thumbprint without adding that fake issuer to Windows' trusted roots. A bounded `always()` cleanup step deletes the test certificate, and the test-signed installer is never uploaded as an artifact.
 
 This proves the build mechanics without exposing or requiring the company's production certificate. It does not establish a trusted publisher or replace the timestamped production-signing and clean-machine gates. `AllowEphemeralTestSigning` exists only for this isolated test path; normal signed builds still require an HTTPS RFC 3161 timestamp URL and trusted-chain verification.
+
+Every installer path also passes an independent release-artifact check. It recomputes the installer SHA-256, verifies the exact checksum-file format, matches the manifest and executable version, verifies the configured update URL, and confirms the claimed signing state. The production path additionally requires an Authenticode timestamp and rejects the development GitHub Releases URL.
 
 ## Unsigned proof build
 
@@ -81,6 +84,8 @@ The signing secrets are scoped only to the configuration-check and certificate-i
 9. Copy the signed installer and checksum to the company SharePoint/OneDrive download location.
 10. Confirm the in-app update action opens that location.
 11. Publish the release only after owner acceptance.
+
+The workflow rejects lightweight tags, tags that are not on `main`, mismatched checked-out commits, invalid manifests or checksums, missing timestamps, and attempts to overwrite an already-published GitHub release.
 
 ## Clean-machine matrix
 

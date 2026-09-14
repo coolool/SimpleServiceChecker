@@ -40,6 +40,14 @@ jobs:
           }
           git rev-parse --verify "refs/tags/$tag"
           if ($LASTEXITCODE -ne 0) { throw "Tag $tag does not exist." }
+          $tagType = git cat-file -t "refs/tags/$tag"
+          if ($tagType -ne 'tag') { throw "Release tag $tag must be annotated." }
+          git fetch origin main --no-tags
+          git merge-base --is-ancestor "$tag^{commit}" refs/remotes/origin/main
+          if ($LASTEXITCODE -ne 0) { throw "Release tag $tag is not on the main branch." }
+          $tagCommit = git rev-parse "$tag^{commit}"
+          $headCommit = git rev-parse HEAD
+          if ($tagCommit -ne $headCommit) { throw "Checked-out commit does not match release tag $tag." }
           "RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "RELEASE_VERSION=$($tag.Substring(1))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "version=$($tag.Substring(1))" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
@@ -125,6 +133,17 @@ jobs:
             -CurrentVersion $env:RELEASE_VERSION `
             -VerifySignatures `
             -SignToolPath $env:SIGNTOOL_PATH
+
+      - name: Verify production release artifacts
+        shell: pwsh
+        run: |
+          ./build/Test-ReleaseArtifacts.ps1 `
+            -ArtifactDirectory artifacts/installer `
+            -Version $env:RELEASE_VERSION `
+            -ExpectedUpdateLocationUrl $env:UPDATE_LOCATION_URL `
+            -ExpectedSigningState Signed `
+            -RequireTimestamp `
+            -DisallowDevelopmentUpdateLocation
 
       - name: Create or update draft release
         shell: pwsh

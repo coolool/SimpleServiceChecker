@@ -57,6 +57,20 @@ jobs:
             -OutputDirectory artifacts/installer `
             -SkipRestore
 
+      - name: Verify unsigned release artifacts
+        shell: pwsh
+        run: |
+          ./build/Test-ReleaseArtifacts.ps1 `
+            -ArtifactDirectory artifacts/installer-previous `
+            -Version 0.9.0 `
+            -ExpectedUpdateLocationUrl https://github.com/coolool/SimpleServiceChecker/releases `
+            -ExpectedSigningState Unsigned
+          ./build/Test-ReleaseArtifacts.ps1 `
+            -ArtifactDirectory artifacts/installer `
+            -Version 1.0.0 `
+            -ExpectedUpdateLocationUrl https://github.com/coolool/SimpleServiceChecker/releases `
+            -ExpectedSigningState Unsigned
+
       - name: Test installer lifecycle
         shell: pwsh
         run: |
@@ -113,6 +127,15 @@ jobs:
             -SignToolPath $env:SIGNTOOL_PATH `
             -ExpectedSignerThumbprint $env:CI_SIGNING_CERT_SHA1 `
             -AllowUntrustedTestCertificate
+
+      - name: Verify signed release artifacts
+        shell: pwsh
+        run: |
+          ./build/Test-ReleaseArtifacts.ps1 `
+            -ArtifactDirectory artifacts/installer-signed-test `
+            -Version 1.0.0 `
+            -ExpectedUpdateLocationUrl https://github.com/coolool/SimpleServiceChecker/releases `
+            -ExpectedSigningState Signed
 
       - name: Remove ephemeral CI signing certificate
         if: always()
