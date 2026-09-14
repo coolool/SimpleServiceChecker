@@ -166,6 +166,14 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - [ ] Test install, launch, upgrade, rollback, and uninstall on clean Windows 10 and Windows 11 x64 systems without Excel, .NET, Git, or developer tools.
 - [ ] Owner accepts Package 6 before Package 7 release-candidate acceptance begins.
 
+### Package 6 implementation evidence
+
+- Release build succeeds with zero warnings and zero errors, all 96 Core and App tests pass, and browser JavaScript plus release PowerShell scripts parse successfully.
+- GitHub Actions compiles versioned `0.9.0` and `1.0.0` per-user installers, then passes unattended install, upgrade, rollback, and uninstall checks using the stable application ID.
+- The downloaded `1.0.0` CI proof has a matching SHA-256 checksum and independently passes install, same-version upgrade, and uninstall on Windows 10 Home 22H2 (build 19045).
+- The proof artifact is deliberately unsigned and uses the private GitHub Releases page as a development-only update fallback. It is not the distributable release candidate.
+- Production signing, the final company update URL, clean Windows 10/11 launch testing, and owner acceptance remain open and are not claimed by this evidence.
+
 ## Release acceptance
 
 - A salesperson can install the application without developer tools or Excel.

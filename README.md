@@ -4,7 +4,7 @@ Starling Service Checker is a low-maintenance Windows desktop application for sa
 
 ## Status
 
-Packages 1 through 5 and the map, Street View, Geocoding, legend, icon, branding, and terrain-minimize follow-ups are accepted. Package 6 installer and release automation is in progress.
+Packages 1 through 5 and the map, Street View, Geocoding, legend, icon, branding, and terrain-minimize follow-ups are accepted. Package 6's unsigned installer proof is passing automated and local lifecycle checks; production signing, clean-machine testing, and owner acceptance remain open.
 
 ## Product boundaries
 
