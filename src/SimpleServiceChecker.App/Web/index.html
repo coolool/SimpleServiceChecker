@@ -62,10 +62,34 @@
     <section class="workspace" aria-label="Coverage map">
       <div id="map" role="application" aria-label="Google coverage map"><div class="map-placeholder"><strong>Map unavailable</strong><span>Open Settings to add the company Google API key.</span></div></div>
       <div class="map-overlay top-left"><span id="map-status" class="map-status"><b aria-hidden="true">○</b> Waiting for setup</span></div>
-      <div class="map-overlay top-right"><section class="map-legend" aria-label="Map legend"><strong>Coverage map</strong><span><i class="legend-dot customer"></i>Customer location</span><span><i class="legend-dot tower"></i>Tower</span><span><i class="legend-ring"></i>Published tower range</span><span><i class="legend-line"></i>Wireless candidate path</span></section></div>
+      <div class="map-overlay top-right">
+        <section class="map-legend" aria-label="Map legend"><strong>Coverage map</strong><span><i class="legend-dot customer"></i>Customer location</span><span><i class="legend-dot tower"></i>Tower</span><span><i class="legend-ring"></i>Published tower range</span><span><i class="legend-line"></i>Wireless candidate path</span></section>
+        <section id="clearance-legend" class="map-legend clearance-legend" aria-label="Line clearance legend" hidden><strong>Line clearance</strong><span><i class="clearance-black"></i>Black: Obstruction</span><span><i class="clearance-red"></i>Red: 10 ft or less (≤ 3.048 m)</span><span><i class="clearance-orange"></i>Orange: 30 ft or less (≤ 9.144 m)</span><span><i class="clearance-yellow"></i>Yellow: 50 ft or less (≤ 15.24 m)</span><span><i class="clearance-green"></i>Green: 51 ft or more</span></section>
+      </div>
       <div class="map-overlay bottom-left"><p class="map-help">Click anywhere to check coordinates. Drag the blue pin to refine the location.</p></div>
+      <section id="profile-card" class="profile-card" aria-labelledby="profile-heading" hidden>
+        <header class="profile-header">
+          <div><span class="eyebrow">Wireless candidate profile</span><h2 id="profile-heading">Terrain and Fresnel clearance</h2><p id="profile-subtitle"></p></div>
+          <button id="profile-close" class="icon-button" type="button" aria-label="Close terrain profile">×</button>
+        </header>
+        <div class="profile-controls" aria-label="Profile assumptions">
+          <label>Customer height (ft)<input id="customer-height" type="number" min="0" max="32808.4" step="1" value="25"></label>
+          <label>Tower height (ft)<input id="tower-height" type="number" min="0" max="32808.4" step="1"></label>
+          <label>Clutter height (ft)<input id="clutter-height" type="number" min="0" max="300" step="1" value="50"></label>
+          <label>Frequency (GHz)<input id="frequency" type="number" min="0.001" max="1000" step="0.1" value="5.8"></label>
+          <label>Fresnel reference (%)<input id="fresnel-reference" type="number" min="0" max="100" step="1" value="60"></label>
+          <label>Earth model<select id="earth-model"><option value="standard">Standard 4/3</option><option value="geometric">Geometric k=1</option><option value="flat">Flat comparison</option></select></label>
+          <button id="profile-refresh" type="button">Refresh elevation</button>
+        </div>
+        <div id="profile-status" class="profile-status" role="status" aria-live="polite">Choose a candidate to request elevation.</div>
+        <div id="profile-output" class="profile-output" hidden>
+          <div class="profile-summary" id="profile-summary"></div>
+          <div class="chart-wrap"><canvas id="terrain-chart"></canvas></div>
+        </div>
+      </section>
     </section>
   </main>
+  <script src="vendor/chart.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

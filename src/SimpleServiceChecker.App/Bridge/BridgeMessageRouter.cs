@@ -14,6 +14,7 @@ public static class BridgeMessageRouter
         BridgeMessageTypes.ChooseWorkbook,
         BridgeMessageTypes.SelectLocation,
         BridgeMessageTypes.ClearLocation,
+        BridgeMessageTypes.AnalyzeTerrain,
     ];
 
     public static bool TryParse(string json, out BridgeMessage? message, out string error)

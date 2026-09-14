@@ -134,4 +134,60 @@ public sealed class BridgeMessageRouterTests
         Assert.Null(request);
         Assert.NotEmpty(error);
     }
+
+    [Fact]
+    public void TerrainParser_AcceptsBoundedSamplesAndApprovedOptions()
+    {
+        using var document = System.Text.Json.JsonDocument.Parse("""
+            {
+              "locationRevision": 3,
+              "plotRevision": 4,
+              "towerRowNumber": 12,
+              "customerHeightFeet": 25,
+              "towerHeightFeet": 140,
+              "frequencyGigahertz": 5.8,
+              "fresnelClearancePercent": 60,
+              "clutterHeightFeet": 50,
+              "earthModel": "standard",
+              "samples": [
+                {"latitude":46.5,"longitude":-84.3,"elevationMetres":200,"resolutionMetres":30},
+                {"latitude":46.6,"longitude":-84.2,"elevationMetres":210,"resolutionMetres":null}
+              ]
+            }
+            """);
+
+        var success = TerrainAnalysisRequestParser.TryParse(document.RootElement, out var request, out var error);
+
+        Assert.True(success, error);
+        Assert.NotNull(request);
+        Assert.Equal(5.8, request.Options.FrequencyGigahertz);
+        Assert.Equal(2, request.Samples.Count);
+        Assert.Null(request.Samples[1].ResolutionMetres);
+    }
+
+    [Theory]
+    [InlineData("standard", "\"bad\"")]
+    [InlineData("unsupported", "200")]
+    public void TerrainParser_RejectsMalformedSettingsOrSamples(string earthModel, string elevation)
+    {
+        var json = $$"""
+            {
+              "locationRevision":1,"plotRevision":1,"towerRowNumber":2,
+              "customerHeightFeet":25,"towerHeightFeet":100,
+              "frequencyGigahertz":5.8,"fresnelClearancePercent":60,
+              "clutterHeightFeet":50,"earthModel":"{{earthModel}}",
+              "samples":[
+                {"latitude":46.5,"longitude":-84.3,"elevationMetres":{{elevation}}},
+                {"latitude":46.6,"longitude":-84.2,"elevationMetres":210}
+              ]
+            }
+            """;
+        using var document = System.Text.Json.JsonDocument.Parse(json);
+
+        var success = TerrainAnalysisRequestParser.TryParse(document.RootElement, out var request, out var error);
+
+        Assert.False(success);
+        Assert.Null(request);
+        Assert.NotEmpty(error);
+    }
 }

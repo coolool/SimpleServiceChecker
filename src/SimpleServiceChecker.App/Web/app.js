@@ -17,6 +17,14 @@
     revision: 0,
     fittedCoverage: false,
     firstRunSetup: false,
+    elevationService: null,
+    elevationBusy: false,
+    plotRevision: 0,
+    selectedCandidate: null,
+    customerLocation: null,
+    lastCandidates: [],
+    terrainSamples: null,
+    chart: null,
   };
 
   const elements = Object.fromEntries([
@@ -25,6 +33,9 @@
     "choose-workbook", "workbook-badge", "workbook-result", "data-summary",
     "place-control", "latitude", "longitude", "check-coordinates", "clear-location",
     "location-status", "fibre-result", "candidate-count", "candidate-list", "map-status",
+    "clearance-legend", "profile-card", "profile-heading", "profile-subtitle", "profile-close",
+    "customer-height", "tower-height", "clutter-height", "frequency", "fresnel-reference",
+    "earth-model", "profile-refresh", "profile-status", "profile-output", "profile-summary", "terrain-chart",
   ].map(id => [id.replaceAll("-", "_"), document.querySelector(`#${id}`)]));
 
   function requestId() {
@@ -115,6 +126,17 @@
       case "locationRejected":
         setStatus(elements.location_status, payload.message ?? "That location could not be checked.", "error");
         break;
+      case "terrainProfileResult":
+        if (payload.locationRevision === state.revision && payload.plotRevision === state.plotRevision) {
+          renderTerrainProfile(payload);
+        }
+        break;
+      case "terrainProfileRejected":
+        if (!payload.plotRevision || payload.plotRevision === state.plotRevision) {
+          showProfileStatus(payload.message ?? "No clearance assessment was made.", "error");
+          elements.profile_output.hidden = true;
+        }
+        break;
       case "bridgeError":
       case "operationFailed":
         setStatus(elements.location_status, payload.message ?? "An unexpected application error occurred.", "error");
@@ -155,6 +177,7 @@
       await loadGoogle(apiKey);
       await initializeMap();
       await initializePlaces();
+      await initializeElevation();
       state.apiKeyConfigured = true;
       setBadge(elements.key_badge, "Connected", "success");
       setStatus(elements.provider_result, "Maps and Places are ready. Elevation is used only when a wireless profile is opened.", "success");
@@ -233,6 +256,11 @@
         setStatus(elements.location_status, "Google could not read that address. Try coordinates or click the map.", "error");
       }
     });
+  }
+
+  async function initializeElevation() {
+    const { ElevationService } = await google.maps.importLibrary("elevation");
+    state.elevationService = new ElevationService();
   }
 
   function addressFromPlace(place) {
@@ -321,6 +349,8 @@
     }
 
     state.revision += 1;
+    closeProfile();
+    state.customerLocation = { lat: latitude, lng: longitude };
     elements.latitude.value = latitude.toFixed(6);
     elements.longitude.value = longitude.toFixed(6);
     elements.clear_location.disabled = false;
@@ -383,9 +413,11 @@
   }
 
   function renderCandidates(candidates, customer) {
+    state.lastCandidates = candidates;
+    state.customerLocation = customer;
     elements.candidate_count.textContent = String(candidates.length);
     elements.candidate_list.replaceChildren();
-    clearCandidatePaths();
+    drawCandidatePaths(candidates, customer);
     if (!candidates.length) {
       elements.candidate_list.append(node("div", { class: "empty-card" }, "No towers include this location within their published range."));
       return;
@@ -398,23 +430,30 @@
           fact("Maximum speed", `${formatNumber(candidate.maxDownloadMbps, 0)} down / ${formatNumber(candidate.maxUploadMbps, 0)} up Mbps`),
           fact("Tower height", `${formatNumber(candidate.heightFeet, 0)} ft`),
           fact("Published range", `${formatNumber(candidate.rangeKilometres, 1)} km`),
-          fact("Profile", "Ready in Package 4")),
+          fact("Profile", candidate.terrainSampleCount > 0 ? `${candidate.terrainSampleCount} elevation samples` : "Path unsupported")),
         candidate.notes ? node("p", { class: "candidate-notes" }, candidate.notes) : null,
-        node("span", { class: "plot-state" }, "Distance and range match only—terrain clearance not yet calculated."));
+        node("span", { class: "plot-state" }, "Terrain is requested only when you open this profile."),
+        node("button", { class: "plot-button", type: "button", ...(candidate.terrainSampleCount > 0 ? {} : { disabled: "" }) }, candidate.terrainSampleCount > 0 ? "Plot terrain & Fresnel" : "Profile unavailable for this path"));
+      card.querySelector(".plot-button").addEventListener("click", () => openProfile(candidate));
       elements.candidate_list.append(card);
+    });
+  }
 
-      if (state.map) {
-        state.candidatePaths.push(new google.maps.Polyline({
-          map: state.map,
-          path: [customer, { lat: candidate.latitude, lng: candidate.longitude }],
-          geodesic: true,
-          clickable: false,
-          strokeColor: "#3f2d23",
-          strokeOpacity: .8,
-          strokeWeight: index === 0 ? 4 : 3,
-          zIndex: 60 - index,
-        }));
-      }
+  function drawCandidatePaths(candidates, customer, excludedTowerRow = null) {
+    clearCandidatePaths();
+    if (!state.map || !customer) return;
+    candidates.forEach((candidate, index) => {
+      if (candidate.rowNumber === excludedTowerRow) return;
+      state.candidatePaths.push(new google.maps.Polyline({
+        map: state.map,
+        path: [customer, { lat: candidate.latitude, lng: candidate.longitude }],
+        geodesic: true,
+        clickable: false,
+        strokeColor: "#3f2d23",
+        strokeOpacity: .72,
+        strokeWeight: index === 0 ? 4 : 3,
+        zIndex: 60 - index,
+      }));
     });
   }
 
@@ -429,18 +468,291 @@
 
   function clearLocation() {
     state.revision += 1;
+    closeProfile();
     post("clearLocation");
     elements.latitude.value = "";
     elements.longitude.value = "";
     elements.clear_location.disabled = true;
     state.customerPin?.setMap(null);
     state.customerPin = null;
+    state.customerLocation = null;
+    state.lastCandidates = [];
     clearCandidatePaths();
     setStatus(elements.location_status, "Choose an address, enter coordinates, or click the map.");
     elements.fibre_result.className = "availability empty";
     elements.fibre_result.replaceChildren(node("strong", {}, "No location selected"), node("span", {}, "The active workbook will be checked for an exact civic-address match."));
     elements.candidate_count.textContent = "—";
     elements.candidate_list.replaceChildren(node("div", { class: "empty-card" }, "Select a customer location to see nearby towers."));
+  }
+
+  function openProfile(candidate) {
+    state.plotRevision += 1;
+    state.selectedCandidate = candidate;
+    state.terrainSamples = null;
+    elements.profile_card.hidden = false;
+    elements.profile_card.parentElement.classList.add("profile-open");
+    globalThis.requestAnimationFrame(() => state.map && google.maps.event.trigger(state.map, "resize"));
+    elements.profile_heading.textContent = "Terrain and Fresnel clearance";
+    elements.profile_subtitle.textContent = `${candidate.name} · ${formatNumber(candidate.distanceKilometres, 2)} km path`;
+    elements.tower_height.value = String(candidate.heightFeet);
+    elements.profile_output.hidden = true;
+    elements.clearance_legend.hidden = true;
+    state.chart?.destroy();
+    state.chart = null;
+    requestElevation();
+  }
+
+  function closeProfile() {
+    state.plotRevision += 1;
+    state.selectedCandidate = null;
+    state.terrainSamples = null;
+    elements.profile_card.hidden = true;
+    elements.profile_card.parentElement.classList.remove("profile-open");
+    globalThis.requestAnimationFrame(() => state.map && google.maps.event.trigger(state.map, "resize"));
+    elements.clearance_legend.hidden = true;
+    elements.profile_output.hidden = true;
+    state.chart?.destroy();
+    state.chart = null;
+    drawCandidatePaths(state.lastCandidates, state.customerLocation);
+  }
+
+  function showProfileStatus(message, kind = "") {
+    elements.profile_status.textContent = message;
+    elements.profile_status.className = `profile-status ${kind}`;
+  }
+
+  function setProfileBusy(busy) {
+    state.elevationBusy = busy;
+    elements.profile_refresh.disabled = busy;
+    [elements.customer_height, elements.tower_height, elements.clutter_height, elements.frequency, elements.fresnel_reference, elements.earth_model]
+      .forEach(control => { control.disabled = busy; });
+  }
+
+  function readProfileOptions() {
+    const values = {
+      customerHeightFeet: Number(elements.customer_height.value),
+      towerHeightFeet: Number(elements.tower_height.value),
+      clutterHeightFeet: Number(elements.clutter_height.value),
+      frequencyGigahertz: Number(elements.frequency.value),
+      fresnelClearancePercent: Number(elements.fresnel_reference.value),
+      earthModel: elements.earth_model.value,
+    };
+    const valid = Object.values(values).every(value => typeof value === "string" || Number.isFinite(value)) &&
+      values.customerHeightFeet >= 0 && values.customerHeightFeet <= 32808.4 &&
+      values.towerHeightFeet >= 0 && values.towerHeightFeet <= 32808.4 &&
+      values.clutterHeightFeet >= 0 && values.clutterHeightFeet <= 300 &&
+      values.frequencyGigahertz >= .001 && values.frequencyGigahertz <= 1000 &&
+      values.fresnelClearancePercent >= 0 && values.fresnelClearancePercent <= 100 &&
+      ["standard", "geometric", "flat"].includes(values.earthModel);
+    if (!valid) {
+      throw new Error("Use values within the ranges shown for height, clutter, frequency, Fresnel reference, and Earth model.");
+    }
+    return values;
+  }
+
+  function requestElevation() {
+    const candidate = state.selectedCandidate;
+    if (!candidate) return;
+    if (!state.elevationService || !state.map) {
+      showProfileStatus("Elevation is unavailable. Check Google setup or connectivity; local candidate results remain valid.", "error");
+      return;
+    }
+    if (state.elevationBusy) {
+      showProfileStatus("The previous Google elevation request is still settling. Wait, then refresh this profile.", "error");
+      return;
+    }
+
+    try {
+      readProfileOptions();
+    } catch (error) {
+      showProfileStatus(error.message, "error");
+      return;
+    }
+
+    const locationRevision = state.revision;
+    const plotRevision = state.plotRevision;
+    const expectedCount = candidate.terrainSampleCount;
+    let settled = false;
+    let expired = false;
+    state.terrainSamples = null;
+    elements.profile_output.hidden = true;
+    setProfileBusy(true);
+    showProfileStatus(`Requesting ${expectedCount} sampled elevations from Google…`);
+
+    const timeout = globalThis.setTimeout(() => {
+      expired = true;
+      if (plotRevision === state.plotRevision) {
+        showProfileStatus("Elevation timed out. No assessment was made. The sent request may still incur usage and must settle before retrying.", "error");
+      }
+    }, 15000);
+
+    const settle = (results, status) => {
+      if (settled) return;
+      settled = true;
+      globalThis.clearTimeout(timeout);
+      setProfileBusy(false);
+      if (expired) {
+        if (plotRevision === state.plotRevision) showProfileStatus("The timed-out request has settled. Select Refresh elevation to try again.", "error");
+        return;
+      }
+      if (plotRevision !== state.plotRevision || locationRevision !== state.revision || candidate.rowNumber !== state.selectedCandidate?.rowNumber) {
+        if (!elements.profile_card.hidden && state.selectedCandidate) showProfileStatus("The previous elevation request has settled. Select Refresh elevation for this tower.");
+        return;
+      }
+      if (status !== "OK" || !Array.isArray(results) || results.length !== expectedCount) {
+        showProfileStatus(elevationFailureMessage(status), "error");
+        return;
+      }
+
+      try {
+        state.terrainSamples = results.map(result => ({
+          latitude: typeof result.location?.lat === "function" ? result.location.lat() : result.location?.lat,
+          longitude: typeof result.location?.lng === "function" ? result.location.lng() : result.location?.lng,
+          elevationMetres: result.elevation,
+          resolutionMetres: Number.isFinite(result.resolution) ? result.resolution : null,
+        }));
+        analyzeCachedTerrain();
+      } catch {
+        state.terrainSamples = null;
+        showProfileStatus("Google returned incomplete elevation data. No clearance assessment was made.", "error");
+      }
+    };
+
+    try {
+      const operation = state.elevationService.getElevationAlongPath({
+        path: [state.customerLocation, { lat: candidate.latitude, lng: candidate.longitude }],
+        samples: expectedCount,
+      }, settle);
+      operation?.catch(() => settle(null, "UNKNOWN_ERROR"));
+    } catch {
+      settle(null, "UNKNOWN_ERROR");
+    }
+  }
+
+  function elevationFailureMessage(status) {
+    return {
+      OVER_QUERY_LIMIT: "Elevation quota or rate limit was reached. No clearance assessment was made.",
+      OVER_DAILY_LIMIT: "Google billing, key, or daily usage limits prevented elevation. No assessment was made.",
+      REQUEST_DENIED: "Google denied Elevation access. Check the enabled API, key restrictions, and billing.",
+      INVALID_REQUEST: "Google rejected this elevation path. No assessment was made.",
+      DATA_NOT_AVAILABLE: "Google has no elevation data for this path. No assessment was made.",
+    }[status] ?? "Google Elevation is unavailable. No clearance assessment was made.";
+  }
+
+  function analyzeCachedTerrain() {
+    if (!state.terrainSamples || !state.selectedCandidate) return;
+    let options;
+    try {
+      options = readProfileOptions();
+    } catch (error) {
+      elements.profile_output.hidden = true;
+      showProfileStatus(error.message, "error");
+      return;
+    }
+
+    showProfileStatus("Calculating line of sight, curvature, clutter, and Fresnel clearance locally…");
+    post("analyzeTerrain", {
+      locationRevision: state.revision,
+      plotRevision: state.plotRevision,
+      towerRowNumber: state.selectedCandidate.rowNumber,
+      ...options,
+      samples: state.terrainSamples,
+    });
+  }
+
+  function renderTerrainProfile(profile) {
+    elements.profile_output.hidden = false;
+    elements.clearance_legend.hidden = false;
+    const lineStatus = profile.isLineOfSightClear ? "Sampled line of sight clear" : "Sampled line of sight obstructed";
+    const fresnelStatus = profile.isFresnelReferenceClear ? `${profile.fresnelClearancePercent}% Fresnel reference clear` : `${profile.fresnelClearancePercent}% Fresnel reference obstructed`;
+    showProfileStatus(`${lineStatus}; ${fresnelStatus}.`, profile.isLineOfSightClear && profile.isFresnelReferenceClear ? "success" : "warning");
+    elements.profile_summary.textContent = profileSummary(profile);
+    renderTerrainChart(profile);
+    renderClearancePath(profile);
+  }
+
+  function profileSummary(profile) {
+    const earthModel = { standard: "4/3 effective Earth radius", geometric: "geometric Earth (k=1)", flat: "flat-earth comparison" }[profile.earthModel] ?? profile.earthModel;
+    const resolution = profile.maximumResolutionMetres == null ? "unknown" : `up to ${formatNumber(profile.maximumResolutionMetres, 1)} m`;
+    return [
+      `Distance: ${formatNumber(profile.distanceMetres / 1000, 3)} km · Bearing: ${formatNumber(profile.bearingDegrees, 1)}° true`,
+      `Minimum line clearance: ${formatNumber(profile.minimumClearanceMetres, 2)} m at ${formatNumber(profile.minimumClearanceDistanceMetres / 1000, 3)} km`,
+      `Minimum ${formatNumber(profile.fresnelClearancePercent, 0)}% Fresnel margin: ${formatNumber(profile.minimumFresnelMarginMetres, 2)} m at ${formatNumber(profile.minimumFresnelMarginDistanceMetres / 1000, 3)} km`,
+      `Assumptions: ${formatNumber(profile.frequencyGigahertz, 2)} GHz · ${earthModel} · ${formatNumber(profile.clutterHeightMetres / .3048, 0)} ft clutter`,
+      `Endpoint heights: ${formatNumber(profile.customerHeightMetres / .3048, 0)} ft customer · ${formatNumber(profile.towerHeightMetres / .3048, 0)} ft tower`,
+      `${profile.samples.length} Google samples · ${formatNumber(profile.sampleSpacingMetres, 1)} m spacing · interpolation resolution ${resolution}`,
+      "Approximate sampled planning model only. Unmapped trees/buildings, diffraction, atmospheric variation, and link budget are not evaluated. This is not an installation or service guarantee.",
+    ].join("\n");
+  }
+
+  function renderTerrainChart(profile) {
+    if (!globalThis.Chart) {
+      showProfileStatus("The packaged chart renderer is unavailable. No visual assessment is shown.", "error");
+      return;
+    }
+    state.chart?.destroy();
+    const labels = profile.samples.map(sample => sample.distanceMetres / 1000);
+    const dataset = (label, values, extra) => ({ label, data: values, pointRadius: 0, borderWidth: 2, ...extra });
+    state.chart = new Chart(elements.terrain_chart, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          dataset("Terrain with curvature", profile.samples.map(sample => sample.terrainMetres), { borderColor: "#5f5a50", backgroundColor: "rgba(95,90,80,.22)", fill: "origin", borderWidth: 1 }),
+          dataset("Clutter assumption", profile.samples.map(sample => sample.clutterTopMetres), { borderColor: "#3c7a62", backgroundColor: "rgba(60,122,98,.14)", fill: "-1", borderWidth: 1 }),
+          dataset("Full first Fresnel zone", profile.samples.map(sample => sample.lineOfSightMetres + sample.firstFresnelRadiusMetres), { borderColor: "#4e86a7", backgroundColor: "rgba(78,134,167,.12)", borderDash: [5, 4], borderWidth: 1 }),
+          dataset("Full first Fresnel zone lower", profile.samples.map(sample => sample.lineOfSightMetres - sample.firstFresnelRadiusMetres), { borderColor: "#4e86a7", backgroundColor: "rgba(78,134,167,.12)", borderDash: [5, 4], fill: "-1", borderWidth: 1 }),
+          dataset("Selected Fresnel reference", profile.samples.map(sample => sample.lineOfSightMetres + sample.fresnelReferenceRadiusMetres), { borderColor: "#d66f35", borderDash: [7, 4], borderWidth: 1.5 }),
+          dataset("Selected Fresnel reference lower", profile.samples.map(sample => sample.lineOfSightMetres - sample.fresnelReferenceRadiusMetres), { borderColor: "#d66f35", borderDash: [7, 4], borderWidth: 1.5 }),
+          dataset("Line of sight", profile.samples.map(sample => sample.lineOfSightMetres), { borderColor: "#2f6f73", borderWidth: 3 }),
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { intersect: false, mode: "index" },
+        plugins: {
+          legend: { labels: { boxWidth: 18, font: { size: 10 }, filter: item => [0, 1, 2, 4, 6].includes(item.datasetIndex) } },
+          tooltip: { callbacks: { title: items => `${formatNumber(items[0].parsed.x, 3)} km from customer`, label: item => `${item.dataset.label}: ${formatNumber(item.parsed.y, 2)} m` } },
+        },
+        scales: {
+          x: { type: "linear", title: { display: true, text: "Path distance (km)" }, ticks: { maxTicksLimit: 8 }, grid: { display: false } },
+          y: { title: { display: true, text: "Elevation (m)" } },
+        },
+      },
+    });
+  }
+
+  function renderClearancePath(profile) {
+    if (!state.map || !state.selectedCandidate) return;
+    drawCandidatePaths(state.lastCandidates, state.customerLocation, state.selectedCandidate.rowNumber);
+    const samples = profile.samples;
+    let runStart = 0;
+    let runColour = samples[1]?.clearanceCategory ?? "green";
+    for (let index = 2; index < samples.length; index += 1) {
+      const colour = samples[index].clearanceCategory ?? "green";
+      if (colour === runColour) continue;
+      addClearanceSegment(samples.slice(runStart, index), runColour);
+      runStart = index - 1;
+      runColour = colour;
+    }
+    addClearanceSegment(samples.slice(runStart), runColour);
+  }
+
+  function addClearanceSegment(samples, category) {
+    if (samples.length < 2) return;
+    const colours = { black: "#111111", red: "#d62828", orange: "#e8842f", yellow: "#d9b51c", green: "#2e8b57" };
+    state.candidatePaths.push(new google.maps.Polyline({
+      map: state.map,
+      path: samples.map(sample => ({ lat: sample.latitude, lng: sample.longitude })),
+      geodesic: true,
+      clickable: false,
+      strokeColor: colours[category] ?? colours.black,
+      strokeOpacity: 1,
+      strokeWeight: 5,
+      zIndex: 90,
+    }));
   }
 
   function node(tag, attributes = {}, ...children) {
@@ -495,6 +807,19 @@
     if (event.key === "Enter") elements.check_coordinates.click();
   }));
   elements.clear_location.addEventListener("click", clearLocation);
+  elements.profile_close.addEventListener("click", closeProfile);
+  elements.profile_refresh.addEventListener("click", () => {
+    if (!state.selectedCandidate) return;
+    state.plotRevision += 1;
+    state.terrainSamples = null;
+    requestElevation();
+  });
+  [elements.customer_height, elements.tower_height, elements.clutter_height, elements.frequency, elements.fresnel_reference, elements.earth_model]
+    .forEach(control => control.addEventListener("change", () => {
+      if (!state.terrainSamples || !state.selectedCandidate) return;
+      state.plotRevision += 1;
+      analyzeCachedTerrain();
+    }));
   globalThis.addEventListener("offline", () => {
     setMapStatus("Offline—local coordinate checks still work", "error");
     setStatus(elements.provider_result, "This computer is offline. Existing coordinates can still be checked locally.", "warning");

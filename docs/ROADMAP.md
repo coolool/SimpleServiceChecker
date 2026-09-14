@@ -44,7 +44,7 @@ Package 1 is accepted. Real workbook towers are intentionally deferred to Packag
 - [x] Add address, coordinate, and map-pin location selection (Package 3 implementation).
 - [x] Add fibre address-range matching in Core (September 14, 2026).
 - [x] Add tower range filtering and candidate ordering in Core (September 14, 2026).
-- [ ] Add tower circles, paths, terrain profiles, and Fresnel-zone clearance. Tower circles and candidate paths are implemented; terrain and Fresnel profiles remain Package 4.
+- [x] Add tower circles, paths, terrain profiles, and Fresnel-zone clearance (Package 4 implementation).
 - [x] Add clear unavailable, incomplete-data, provider-error, and offline states for the sales-map workflow (Package 3 implementation).
 
 ### Package 3 - Sales interface and map workflow
@@ -88,6 +88,27 @@ Package 1 is accepted. Real workbook towers are intentionally deferred to Packag
 - Owner approved Package 2 on September 14, 2026.
 
 Package 2 remains the accepted map-independent domain layer. Package 3 now connects it to the sales interface and Google map.
+
+### Package 4 - Terrain, line clearance, and Fresnel plots
+
+- [x] Request Google elevation only when a salesperson opens or refreshes a candidate profile.
+- [x] Bound every request to an odd 33–511 sample plan and prevent overlapping billable requests.
+- [x] Suppress timed-out, cancelled, changed-location, changed-tower, and otherwise stale results.
+- [x] Validate sample count, numeric values, and every returned sample's position against the selected great-circle path.
+- [x] Calculate independent endpoint heights, curvature, global clutter, line clearance, full first Fresnel radius, and selected Fresnel-reference margin in Core.
+- [x] Provide 5.8 GHz, 60%, 4/3 Earth, 25 ft customer height, and 50 ft clutter defaults with visible adjustable controls.
+- [x] Recalculate height, clutter, frequency, Fresnel percentage, and Earth-model changes locally from the current samples without another Google request.
+- [x] Render the tall Chart.js terrain/Fresnel profile and the approved black/red/orange/yellow/green clearance path with labelled legends and non-colour status text.
+- [x] Return safe quota, billing/key, denied, invalid-request, unavailable-data, timeout, and offline states without exposing provider diagnostics.
+- [ ] Owner accepts Package 4 before Package 5 spreadsheet-management work begins.
+
+#### Package 4 implementation evidence
+
+- Release build succeeds with zero warnings and zero errors on Windows 10 x64.
+- Automated tests: 83 pass across Core and App. New tests cover the analytical 10 km/5.8 GHz Fresnel midpoint, endpoint radii, standard/geometric/flat Earth models, independent endpoint heights, 0/60/100% reference settings, obstruction, exact clearance thresholds, bounded samples, malformed settings, incomplete responses, and geographically mismatched samples.
+- Browser JavaScript syntax validation and the self-contained `win-x64` publish both pass.
+- Elevation remains an on-demand Google client call. The application has no elevation backend, cache, database, search history, telemetry, ISED layer, or fibre overlay.
+- Manual Package 4 visual and live-Elevation acceptance remain the blocking gate.
 
 ## Phase 3 - Spreadsheet management
 
