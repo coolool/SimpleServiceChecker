@@ -8,4 +8,5 @@ public static class BridgeMessageTypes
     public const string ChooseWorkbook = "chooseWorkbook";
     public const string SelectLocation = "selectLocation";
     public const string ClearLocation = "clearLocation";
+    public const string AnalyzeTerrain = "analyzeTerrain";
 }

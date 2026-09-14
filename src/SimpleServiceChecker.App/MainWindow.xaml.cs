@@ -7,6 +7,7 @@ using SimpleServiceChecker.App.Bridge;
 using SimpleServiceChecker.App.Infrastructure;
 using SimpleServiceChecker.App.Security;
 using SimpleServiceChecker.Core.Coverage;
+using SimpleServiceChecker.Core.Terrain;
 using SimpleServiceChecker.Core.Workbooks;
 
 namespace SimpleServiceChecker.App;
@@ -21,6 +22,8 @@ public partial class MainWindow : Window
     private CoverageDataset? activeDataset;
     private CoverageWorkbookManifest? activeManifest;
     private CancellationTokenSource? locationSelectionCancellation;
+    private CancellationTokenSource? terrainAnalysisCancellation;
+    private ActiveLocationSelection? activeLocationSelection;
 
     public MainWindow()
     {
@@ -103,7 +106,12 @@ public partial class MainWindow : Window
                     break;
                 case BridgeMessageTypes.ClearLocation:
                     CancelLocationSelection();
+                    CancelTerrainAnalysis();
+                    activeLocationSelection = null;
                     await SendAsync("locationCleared", message.RequestId, new { });
+                    break;
+                case BridgeMessageTypes.AnalyzeTerrain:
+                    await HandleAnalyzeTerrainAsync(message);
                     break;
                 default:
                     break;
@@ -207,6 +215,8 @@ public partial class MainWindow : Window
         }
 
         CancelLocationSelection();
+        CancelTerrainAnalysis();
+        activeLocationSelection = null;
         activeDataset = result.LoadResult.Dataset;
         activeManifest = result.Manifest;
         await SendCoverageDatasetAsync(requestId, result.LoadResult.Warnings);
@@ -230,6 +240,8 @@ public partial class MainWindow : Window
         }
 
         CancelLocationSelection();
+        CancelTerrainAnalysis();
+        activeLocationSelection = null;
         locationSelectionCancellation = new CancellationTokenSource();
         var cancellationToken = locationSelectionCancellation.Token;
         var dataset = activeDataset;
@@ -242,6 +254,11 @@ public partial class MainWindow : Window
             cancellationToken.ThrowIfCancellationRequested();
             return (Fibre: fibre, Candidates: candidates);
         }, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        activeLocationSelection = new ActiveLocationSelection(
+            request!.Revision,
+            request.Location,
+            Candidates.Select(candidate => candidate.Tower.SourceRowNumber).ToHashSet());
 
         await SendAsync("locationResult", message.RequestId, new
         {
@@ -269,8 +286,112 @@ public partial class MainWindow : Window
                 notes = candidate.Tower.Notes,
                 latitude = candidate.Tower.Location.Latitude,
                 longitude = candidate.Tower.Location.Longitude,
+                terrainSampleCount = GetTerrainSampleCount(candidate.DistanceKilometres * 1000),
             }),
         });
+    }
+
+    private async Task HandleAnalyzeTerrainAsync(BridgeMessage message)
+    {
+        if (!TerrainAnalysisRequestParser.TryParse(message.Payload, out var request, out var error))
+        {
+            await SendAsync("terrainProfileRejected", message.RequestId, new { message = error });
+            return;
+        }
+
+        if (activeDataset is null ||
+            activeLocationSelection is null ||
+            request!.LocationRevision != activeLocationSelection.Revision ||
+            !activeLocationSelection.CandidateRows.Contains(request.TowerRowNumber))
+        {
+            await SendAsync("terrainProfileRejected", message.RequestId, new
+            {
+                plotRevision = request!.PlotRevision,
+                message = "The customer location or tower changed. Open the profile again.",
+            });
+            return;
+        }
+
+        var selection = activeLocationSelection;
+        var tower = activeDataset.Towers.FirstOrDefault(candidate => candidate.SourceRowNumber == request.TowerRowNumber);
+        if (tower is null)
+        {
+            await SendAsync("terrainProfileRejected", message.RequestId, new
+            {
+                plotRevision = request.PlotRevision,
+                message = "The selected tower is no longer in the active workbook.",
+            });
+            return;
+        }
+
+        CancelTerrainAnalysis();
+        terrainAnalysisCancellation = new CancellationTokenSource();
+        var cancellationToken = terrainAnalysisCancellation.Token;
+        try
+        {
+            var profile = await Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var calculated = TerrainProfileCalculator.Calculate(
+                    new TerrainEndpoint(selection.Location, request.CustomerHeightFeet),
+                    new TerrainEndpoint(tower.Location, request.TowerHeightFeet),
+                    request.Samples,
+                    request.Options);
+                cancellationToken.ThrowIfCancellationRequested();
+                return calculated;
+            }, cancellationToken);
+
+            await SendAsync("terrainProfileResult", message.RequestId, new
+            {
+                locationRevision = request.LocationRevision,
+                plotRevision = request.PlotRevision,
+                towerRowNumber = request.TowerRowNumber,
+                towerName = tower.Name,
+                profile.DistanceMetres,
+                profile.BearingDegrees,
+                profile.SampleSpacingMetres,
+                profile.FrequencyGigahertz,
+                profile.FresnelClearancePercent,
+                earthModel = EarthModelName(profile.EarthModel),
+                profile.EffectiveEarthRadiusFactor,
+                profile.CustomerHeightMetres,
+                profile.TowerHeightMetres,
+                profile.ClutterHeightMetres,
+                profile.MaximumResolutionMetres,
+                profile.UnknownResolutionCount,
+                profile.IsLineOfSightClear,
+                profile.IsFresnelReferenceClear,
+                minimumClearanceMetres = profile.MinimumClearance.ClearanceMetres,
+                minimumClearanceDistanceMetres = profile.MinimumClearance.DistanceMetres,
+                minimumFresnelMarginMetres = profile.MinimumFresnelReferenceMargin.FresnelReferenceMarginMetres,
+                minimumFresnelMarginDistanceMetres = profile.MinimumFresnelReferenceMargin.DistanceMetres,
+                samples = profile.Samples.Select(sample => new
+                {
+                    sample.Index,
+                    latitude = sample.Location.Latitude,
+                    longitude = sample.Location.Longitude,
+                    sample.DistanceMetres,
+                    sample.RawElevationMetres,
+                    sample.CurvatureBulgeMetres,
+                    sample.TerrainMetres,
+                    sample.ClutterTopMetres,
+                    sample.LineOfSightMetres,
+                    sample.FirstFresnelRadiusMetres,
+                    sample.FresnelReferenceRadiusMetres,
+                    sample.ClearanceMetres,
+                    sample.FresnelReferenceMarginMetres,
+                    clearanceCategory = ClearanceCategoryName(sample.ClearanceCategory),
+                }),
+            });
+        }
+        catch (ArgumentException)
+        {
+            await SendAsync("terrainProfileRejected", message.RequestId, new
+            {
+                plotRevision = request.PlotRevision,
+                message = "The elevation samples or profile settings are invalid. No clearance assessment was made.",
+            });
+        }
     }
 
     private async Task SendCoverageDatasetAsync(
@@ -314,6 +435,36 @@ public partial class MainWindow : Window
         locationSelectionCancellation?.Dispose();
         locationSelectionCancellation = null;
     }
+
+    private void CancelTerrainAnalysis()
+    {
+        terrainAnalysisCancellation?.Cancel();
+        terrainAnalysisCancellation?.Dispose();
+        terrainAnalysisCancellation = null;
+    }
+
+    private static int GetTerrainSampleCount(double distanceMetres) =>
+        distanceMetres is >= 1 and <= 200_000
+            ? TerrainProfileCalculator.GetSampleCount(distanceMetres)
+            : 0;
+
+    private static string EarthModelName(EarthModel earthModel) => earthModel switch
+    {
+        EarthModel.StandardFourThirds => "standard",
+        EarthModel.Geometric => "geometric",
+        EarthModel.Flat => "flat",
+        _ => "unknown",
+    };
+
+    private static string ClearanceCategoryName(ClearanceCategory category) => category switch
+    {
+        ClearanceCategory.Obstruction => "black",
+        ClearanceCategory.TenFeetOrLess => "red",
+        ClearanceCategory.ThirtyFeetOrLess => "orange",
+        ClearanceCategory.FiftyFeetOrLess => "yellow",
+        ClearanceCategory.MoreThanFiftyFeet => "green",
+        _ => "black",
+    };
 
     private async Task ConfigureGoogleAsync(string apiKey)
     {
@@ -371,6 +522,12 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         CancelLocationSelection();
+        CancelTerrainAnalysis();
         base.OnClosed(e);
     }
+
+    private sealed record ActiveLocationSelection(
+        long Revision,
+        GeoCoordinate Location,
+        IReadOnlySet<int> CandidateRows);
 }

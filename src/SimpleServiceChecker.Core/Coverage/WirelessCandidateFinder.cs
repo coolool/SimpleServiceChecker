@@ -36,7 +36,7 @@ public static class WirelessCandidateFinder
 
 public static class GeoMath
 {
-    private const double EarthRadiusKilometres = 6371.0088;
+    public const double EarthRadiusKilometres = 6371.0088;
 
     public static double DistanceKilometres(GeoCoordinate first, GeoCoordinate second)
     {
@@ -75,6 +75,52 @@ public static class GeoMath
         return normalized < 0 ? normalized + 360 : normalized;
     }
 
+    public static GeoCoordinate InterpolateGeodesic(
+        GeoCoordinate origin,
+        GeoCoordinate destination,
+        double fraction)
+    {
+        EnsureValid(origin, nameof(origin));
+        EnsureValid(destination, nameof(destination));
+        if (!double.IsFinite(fraction) || fraction < 0 || fraction > 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(fraction));
+        }
+
+        if (fraction == 0)
+        {
+            return origin;
+        }
+
+        if (fraction == 1)
+        {
+            return destination;
+        }
+
+        var angle = DistanceKilometres(origin, destination) / EarthRadiusKilometres;
+        if (angle < 1e-12 || Math.Abs(Math.Sin(angle)) < 1e-12)
+        {
+            throw new ArgumentException("The path cannot be interpolated.", nameof(destination));
+        }
+
+        var originLatitude = ToRadians(origin.Latitude);
+        var originLongitude = ToRadians(origin.Longitude);
+        var destinationLatitude = ToRadians(destination.Latitude);
+        var destinationLongitude = ToRadians(destination.Longitude);
+        var originWeight = Math.Sin((1 - fraction) * angle) / Math.Sin(angle);
+        var destinationWeight = Math.Sin(fraction * angle) / Math.Sin(angle);
+        var x = (originWeight * Math.Cos(originLatitude) * Math.Cos(originLongitude)) +
+            (destinationWeight * Math.Cos(destinationLatitude) * Math.Cos(destinationLongitude));
+        var y = (originWeight * Math.Cos(originLatitude) * Math.Sin(originLongitude)) +
+            (destinationWeight * Math.Cos(destinationLatitude) * Math.Sin(destinationLongitude));
+        var z = (originWeight * Math.Sin(originLatitude)) +
+            (destinationWeight * Math.Sin(destinationLatitude));
+
+        return new GeoCoordinate(
+            ToDegrees(Math.Atan2(z, Math.Sqrt((x * x) + (y * y)))),
+            WrapLongitude(ToDegrees(Math.Atan2(y, x))));
+    }
+
     private static double ToRadians(double degrees)
     {
         return degrees * Math.PI / 180;
@@ -84,6 +130,9 @@ public static class GeoMath
     {
         return radians * 180 / Math.PI;
     }
+
+    private static double WrapLongitude(double longitude) =>
+        ((((longitude + 180) % 360) + 360) % 360) - 180;
 
     private static void EnsureValid(GeoCoordinate coordinate, string parameterName)
     {
