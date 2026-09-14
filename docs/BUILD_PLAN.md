@@ -18,7 +18,7 @@ The application must preserve the recognizable Service Checker map, warm sidebar
 - Google Maps, Places, Elevation, and Geocoding use a company-owned restricted key encrypted for the current Windows user.
 - Google Maps defaults to satellite imagery, allows the four standard map types, and offers Street View from the customer-location card only when nearby official imagery is available.
 - Wireless plots include first Fresnel-zone clearance with defaults of 5.8 GHz, 60%, and effective-earth-radius factor 4/3.
-- A signed per-user installer is distributed through a company-controlled SharePoint or OneDrive link.
+- A per-user installer is distributed through a selected GitHub Releases page; release-repository visibility and signing policy are explicit owner decisions.
 - Updates are manual. `Check for Updates` opens the fixed company download location.
 
 ## 3. Source baselines
@@ -232,7 +232,7 @@ Build:
 - Authenticode signing for application and installer binaries;
 - GitHub Actions build, test, publish, sign, checksum, and draft-release workflow;
 - protected approval before signing and publishing;
-- `Check for Updates` opening the company SharePoint or OneDrive location; and
+- `Check for Updates` opening the selected GitHub Releases page; and
 - release checklist and administrator-free salesperson instructions.
 
 The normal online installer uses the small WebView2 bootstrapper. Keep an offline installer variant out of version 1 unless a real deployment environment requires it, because bundling the fixed runtime would substantially increase package size and servicing work.
@@ -255,7 +255,7 @@ Run the complete acceptance matrix using synthetic data plus the supplied workbo
 - clean install, upgrade, uninstall, and remaining local-data disclosure; and
 - repository and release-artifact scan for keys, real workbooks, customer data, logs, and searched locations.
 
-Gate: owner signs off on the release candidate. Publish the signed installer to the company SharePoint or OneDrive location only after this gate.
+Gate: owner signs off on the release candidate. Publish the installer to the selected GitHub Releases page only after this gate.
 
 ## 6. Continuous integration
 

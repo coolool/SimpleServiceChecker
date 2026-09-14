@@ -58,8 +58,12 @@ jobs:
           SIGNING_PFX_PASSWORD: ${{ secrets.CODE_SIGNING_PASSWORD }}
         shell: pwsh
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:UPDATE_LOCATION_URL) -or $env:UPDATE_LOCATION_URL -notmatch '^https://') {
-            throw 'Set the production-signing environment variable UPDATE_LOCATION_URL to the company SharePoint or OneDrive download page.'
+          $updateUri = $null
+          if ([string]::IsNullOrWhiteSpace($env:UPDATE_LOCATION_URL) -or
+              -not [Uri]::TryCreate($env:UPDATE_LOCATION_URL, [UriKind]::Absolute, [ref]$updateUri) -or
+              -not $updateUri.Host.Equals('github.com', [StringComparison]::OrdinalIgnoreCase) -or
+              $updateUri.AbsolutePath -notmatch '^/[^/]+/[^/]+/releases(?:/latest)?/?$') {
+            throw 'Set UPDATE_LOCATION_URL to the selected GitHub repository Releases or Releases/latest page.'
           }
           if ([string]::IsNullOrWhiteSpace($env:TIMESTAMP_URL) -or $env:TIMESTAMP_URL -notmatch '^https://') {
             throw 'Set CODE_SIGNING_TIMESTAMP_URL in the production-signing environment.'
@@ -143,7 +147,7 @@ jobs:
             -ExpectedUpdateLocationUrl $env:UPDATE_LOCATION_URL `
             -ExpectedSigningState Signed `
             -RequireTimestamp `
-            -DisallowDevelopmentUpdateLocation
+            -RequireGitHubReleasesUpdateLocation
 
       - name: Create or update draft release
         shell: pwsh

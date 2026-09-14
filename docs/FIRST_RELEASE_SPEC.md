@@ -243,7 +243,7 @@ GitHub Actions produces a normal signed Windows installer. A salesperson does no
 
 Manual releases mean the installed application does not silently update itself. A `Check for updates` command opens the fixed latest-release page, and the user downloads and runs a newer installer when one is available. The existing installation continues to work until then.
 
-Because the source repository is private, its GitHub Releases page is convenient only for recipients who have been granted repository access. General distribution uses a company-controlled SharePoint or OneDrive download link while keeping source code private.
+GitHub Releases is the selected update channel. If releases remain in the private source repository, every recipient needs repository read access and a GitHub sign-in. A separate public, binary-only release repository would permit link-only downloads while keeping the source repository private; the owner must explicitly choose visibility before general distribution.
 
 Code signing is required before general distribution. Without it, Windows can show an `Unknown publisher` warning even when the installer is legitimate.
 
@@ -264,4 +264,4 @@ Code signing is required before general distribution. Without it, Windows can sh
 4. Wireless plots include Fresnel-zone clearance.
 5. External spectrum and regulatory-data imports or map layers are deferred beyond version 1.
 6. Workbook validation and availability wording follow this specification.
-7. Signed installers are distributed through a company-controlled SharePoint or OneDrive link.
+7. Installers are distributed through the owner-selected GitHub Releases page using the approved visibility and signing policy.

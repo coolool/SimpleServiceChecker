@@ -36,7 +36,7 @@ Pull-request CI creates a one-day, self-signed code-signing certificate on the d
 
 This proves the build mechanics without exposing or requiring the company's production certificate. It does not establish a trusted publisher or replace the timestamped production-signing and clean-machine gates. `AllowEphemeralTestSigning` exists only for this isolated test path; normal signed builds still require an HTTPS RFC 3161 timestamp URL and trusted-chain verification.
 
-Every installer path also passes an independent release-artifact check. It recomputes the installer SHA-256, verifies the exact checksum-file format, matches the manifest and executable version, verifies the configured update URL, and confirms the claimed signing state. The production path additionally requires an Authenticode timestamp and rejects the development GitHub Releases URL.
+Every installer path also passes an independent release-artifact check. It recomputes the installer SHA-256, verifies the exact checksum-file format, matches the manifest and executable version, verifies the configured update URL, and confirms the claimed signing state. The production path additionally requires the selected GitHub Releases URL and, while signing remains required, an Authenticode timestamp.
 
 ## Unsigned proof build
 
@@ -64,7 +64,7 @@ Environment secrets:
 
 Environment variables:
 
-- `UPDATE_LOCATION_URL` — final HTTPS SharePoint or OneDrive folder/page used by **Check for updates**.
+- `UPDATE_LOCATION_URL` — final `https://github.com/OWNER/REPOSITORY/releases/latest` page used by **Check for updates**.
 - `CODE_SIGNING_TIMESTAMP_URL` — the HTTPS RFC 3161 timestamp endpoint approved by the certificate issuer.
 
 Never commit the certificate, password, API key, workbook, or decoded temporary PFX. The workflow imports the certificate into the ephemeral runner's current-user store, signs the application executable and first-party DLLs, lets Inno Setup sign the installer and uninstaller, verifies each relevant signature, and removes imported certificate material in an `always()` cleanup step.
@@ -75,13 +75,13 @@ The signing secrets are scoped only to the configuration-check and certificate-i
 
 1. Merge an owner-approved Package 6 branch with all checks green.
 2. Confirm the `production-signing` environment requires approval and has the four required values.
-3. Confirm `UPDATE_LOCATION_URL` is the real company-controlled download page—not the development GitHub fallback.
+3. Confirm `UPDATE_LOCATION_URL` is the owner-selected GitHub Releases page and that its visibility matches the approved audience.
 4. Create and push an annotated `vMAJOR.MINOR.PATCH` tag on the reviewed merge commit.
 5. Approve the waiting `production-signing` job.
 6. Confirm the workflow passes build, tests, signing, signature verification, lifecycle installation, and checksums.
 7. Review the draft GitHub release; do not publish it yet.
 8. Run the clean-machine matrix below using the signed installer.
-9. Copy the signed installer and checksum to the company SharePoint/OneDrive download location.
+9. Confirm the installer and checksum are attached to the draft GitHub release.
 10. Confirm the in-app update action opens that location.
 11. Publish the release only after owner acceptance.
 
@@ -109,9 +109,9 @@ Record machine versions, installer version/hash, WebView2 starting state, result
 
 ## Current external prerequisites
 
-Package 6 cannot produce a generally distributable signed installer until the owner supplies or selects:
+Package 6 cannot produce a generally distributable installer until the owner supplies or selects:
 
-1. the final company SharePoint/OneDrive download-page URL; and
-2. a valid Authenticode code-signing certificate and its approved RFC 3161 timestamp service.
+1. whether GitHub releases are private in the source repository or public in a separate binary-only repository; and
+2. whether the documented Authenticode requirement is retained or explicitly waived with the resulting Windows warning/blocking risk accepted.
 
 These are release credentials/configuration, not application source, and must remain outside Git.

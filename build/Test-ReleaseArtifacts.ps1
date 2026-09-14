@@ -9,7 +9,7 @@ param(
     [ValidateSet('Any', 'Signed', 'Unsigned')]
     [string]$ExpectedSigningState = 'Any',
     [switch]$RequireTimestamp,
-    [switch]$DisallowDevelopmentUpdateLocation
+    [switch]$RequireGitHubReleasesUpdateLocation
 )
 
 $ErrorActionPreference = 'Stop'
@@ -77,8 +77,10 @@ if (-not [Uri]::TryCreate([string]$manifest.updateLocation, [UriKind]::Absolute,
 if (-not [string]::IsNullOrWhiteSpace($ExpectedUpdateLocationUrl)) {
     Assert-Equal ([string]$manifest.updateLocation) $ExpectedUpdateLocationUrl 'Manifest update location'
 }
-if ($DisallowDevelopmentUpdateLocation -and $updateUri.Host.Equals('github.com', [StringComparison]::OrdinalIgnoreCase)) {
-    throw 'A production release cannot use the development GitHub Releases update location.'
+if ($RequireGitHubReleasesUpdateLocation -and
+    (-not $updateUri.Host.Equals('github.com', [StringComparison]::OrdinalIgnoreCase) -or
+        $updateUri.AbsolutePath -notmatch '^/[^/]+/[^/]+/releases(?:/latest)?/?$')) {
+    throw 'Production updateLocation must be a GitHub repository Releases or Releases/latest URL.'
 }
 
 $actualHash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()

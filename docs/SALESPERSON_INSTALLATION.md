@@ -4,7 +4,7 @@
 
 - A Windows 10 or Windows 11 x64 computer.
 - Internet access during installation and whenever using Google Maps features.
-- The signed `StarlingServiceChecker-Setup-<version>.exe` supplied through the company download page.
+- The `StarlingServiceChecker-Setup-<version>.exe` supplied through the approved GitHub Releases page.
 - Your company's restricted Google Maps Platform browser API key.
 - The approved two-tab coverage workbook.
 
@@ -12,7 +12,7 @@ You do not need administrator access, Microsoft Excel, .NET, Git, a database, or
 
 ## Install
 
-1. Download the installer from the company SharePoint or OneDrive location.
+1. Download the installer from the approved GitHub Releases page. A private release requires a GitHub account with repository access; a public release-only repository does not.
 2. Open the installer and confirm Windows shows the company's expected verified publisher. Stop and contact IT if it says **Unknown publisher** or shows a different publisher.
 3. Continue through setup. The Start menu shortcut is automatic; the desktop shortcut is optional.
 4. If Microsoft Edge WebView2 is not already present, setup downloads and installs Microsoft's Evergreen Runtime for the current user. Keep the computer online until setup finishes.
@@ -30,7 +30,7 @@ If WebView2 cannot be installed, reconnect to the internet and rerun setup. If a
 
 ## Updates
 
-Open **Settings** and select **Check for updates**. The company download page opens in your default browser. Download and run the newer signed installer; it upgrades the existing installation and retains the current user's local settings and validated coverage.
+Open **Settings** and select **Check for updates**. The selected GitHub Releases page opens in your default browser. Download and run the newer installer; it upgrades the existing installation and retains the current user's local settings and validated coverage.
 
 ## Uninstall
 

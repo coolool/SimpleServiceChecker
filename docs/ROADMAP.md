@@ -13,7 +13,7 @@
 - [x] Defer external spectrum and regulatory-data imports or map layers beyond version 1.
 - [x] Owner approves `FIRST_RELEASE_SPEC.md`.
 - [x] Owner accepts WPF/.NET and WebView2 as the technical direction.
-- [x] Owner selects a company-controlled SharePoint or OneDrive installer link.
+- [x] Owner selects GitHub Releases as the update and installer-download channel (September 14, 2026); private source-repository versus separate public binary-repository visibility remains open.
 - [x] Owner accepts `BUILD_PLAN.md` and explicitly starts Phase 1 implementation (September 14, 2026).
 
 ## Phase 1 - Technical proof
@@ -161,7 +161,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - [x] Add CI lifecycle coverage for install, same-version upgrade, version upgrade, rollback, and uninstall.
 - [x] Add a build-configurable `Check for updates` action that opens only the compiled HTTPS download location.
 - [x] Add a protected tag-driven workflow for SHA-256 checksums, Authenticode signing, signature verification, and draft GitHub release creation.
-- [ ] Configure the final company SharePoint or OneDrive update URL and protected signing environment.
+- [ ] Confirm GitHub release-repository visibility, configure its final Releases/latest URL, and resolve whether the signing requirement is retained or explicitly waived.
 - [ ] Produce and verify the first signed installer using the company's code-signing certificate.
 - [ ] Test install, launch, upgrade, rollback, and uninstall on clean Windows 10 and Windows 11 x64 systems without Excel, .NET, Git, or developer tools.
 - [ ] Owner accepts Package 6 before Package 7 release-candidate acceptance begins.
@@ -172,11 +172,11 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - GitHub Actions compiles versioned `0.9.0` and `1.0.0` per-user installers, then passes unattended install, upgrade, rollback, and uninstall checks using the stable application ID.
 - Pull-request CI uses a disposable one-day test certificate to exercise Authenticode signing of the application, installer, and generated uninstaller, verifies those signatures, and removes the certificate and test-signed output without uploading them.
 - CI scans every tracked file and fails without echoing matched contents if a workbook, database, generated installer, log, private key, or Google-key-shaped value enters the repository.
-- CI independently recomputes each installer checksum and verifies its version, release manifest, exact update location, and claimed signing state; production additionally requires an Authenticode timestamp and rejects the development GitHub Releases URL.
+- CI independently recomputes each installer checksum and verifies its version, release manifest, exact update location, and claimed signing state; production additionally requires the selected GitHub Releases URL and, while signing remains required, an Authenticode timestamp.
 - The draft-release workflow accepts only annotated version tags whose commit is on `main`, and verifies that the checked-out commit matches the requested tag before signing.
 - The downloaded `1.0.0` CI proof from commit `9ee9cc6` has verified SHA-256 `a9956847bc9e65644545221b5e33fac9744b27ecc353d1a1bf7b8704eed85913` and independently passes install, same-version upgrade, and uninstall under the normal user token on Windows 10 Home 22H2 (build 19045).
 - Installer lifecycle failures retain no log but surface bounded fatal/error lines before cleanup, making environmental failures such as a denied per-user uninstall-registry write distinguishable from application packaging failures.
-- The proof artifact is deliberately unsigned and uses the private GitHub Releases page as a development-only update fallback. It is not the distributable release candidate.
+- The proof artifact is deliberately unsigned and uses the current private GitHub Releases page as a development fallback. It is not the distributable release candidate until visibility and signing policy are approved.
 - Production signing, the final company update URL, clean Windows 10/11 launch testing, and owner acceptance remain open and are not claimed by this evidence.
 
 ## Release acceptance
