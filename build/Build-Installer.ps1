@@ -209,7 +209,7 @@ try {
             '/td SHA256 /tr "{0}"' -f $TimestampUrl
         }
         $signCommand = '"{0}" sign /sha1 {1} /fd SHA256 {2} /d $qStarling Service Checker$q $f' -f $SignToolPath, $SigningCertificateThumbprint, $timestampArguments
-        $innoArguments += "--signtool=starling=$signCommand"
+        $innoArguments += "/Sstarling=$signCommand"
         $innoArguments += '/DSignToolName=starling'
     }
     $innoArguments += 'installer\StarlingServiceChecker.iss'
