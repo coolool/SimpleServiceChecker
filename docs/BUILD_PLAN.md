@@ -15,7 +15,7 @@ The application must preserve the recognizable Service Checker map, warm sidebar
 - The application is published self-contained for `win-x64`.
 - The main interface uses bundled HTML, CSS, plain JavaScript modules, and Chart.js. It has no runtime CDN or front-end framework.
 - Coverage comes only from a validated workbook containing `Tower Coverage` and `Fibre Coverage`.
-- Google Maps, Places, and Elevation use a company-owned restricted key encrypted for the current Windows user.
+- Google Maps, Places, Elevation, and Geocoding use a company-owned restricted key encrypted for the current Windows user.
 - Wireless plots include first Fresnel-zone clearance with defaults of 5.8 GHz, 60%, and effective-earth-radius factor 4/3.
 - A signed per-user installer is distributed through a company-controlled SharePoint or OneDrive link.
 - Updates are manual. `Check for Updates` opens the fixed company download location.

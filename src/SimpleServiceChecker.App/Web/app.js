@@ -9,6 +9,7 @@
     map: null,
     towerData: null,
     towerRanges: [],
+    towerLabels: [],
     candidatePaths: [],
     customerPin: null,
     infoWindow: null,
@@ -18,6 +19,9 @@
     fittedCoverage: false,
     firstRunSetup: false,
     elevationService: null,
+    geocoder: null,
+    reverseGeocodeRevision: 0,
+    locationNotice: null,
     elevationBusy: false,
     plotRevision: 0,
     selectedCandidate: null,
@@ -178,9 +182,10 @@
       await initializeMap();
       await initializePlaces();
       await initializeElevation();
+      await initializeGeocoder();
       state.apiKeyConfigured = true;
       setBadge(elements.key_badge, "Connected", "success");
-      setStatus(elements.provider_result, "Maps and Places are ready. Elevation is used only when a wireless profile is opened.", "success");
+      setStatus(elements.provider_result, "Maps, Places, and pin address lookup are ready. Elevation is used only when a wireless profile is opened.", "success");
       setMapStatus(state.coverage ? `${state.coverage.towerCount} towers loaded` : "Map ready—choose a workbook", "ready");
       maybeFinishFirstSetup();
     } catch (error) {
@@ -225,9 +230,10 @@
     state.infoWindow = new google.maps.InfoWindow();
     state.map.addListener("click", event => {
       if (event.latLng) {
-        selectLocation(event.latLng.toJSON(), "map", null);
+        reverseGeocodeAndSelect(event.latLng.toJSON(), "map");
       }
     });
+    state.map.addListener("zoom_changed", updateCustomerPinSize);
     renderTowerCoverage();
   }
 
@@ -263,6 +269,11 @@
     state.elevationService = new ElevationService();
   }
 
+  async function initializeGeocoder() {
+    const { Geocoder } = await google.maps.importLibrary("geocoding");
+    state.geocoder = new Geocoder();
+  }
+
   function addressFromPlace(place) {
     const components = place.addressComponents ?? [];
     const find = (...types) => components.find(component => types.some(type => component.types?.includes(type)))?.longText ?? null;
@@ -275,6 +286,58 @@
     };
   }
 
+  function addressFromGeocoderResult(result) {
+    const components = result?.address_components ?? [];
+    const find = (...types) => components.find(component => types.some(type => component.types?.includes(type)))?.long_name ?? null;
+    return {
+      civicNumber: find("street_number"),
+      route: find("route"),
+      city: find("locality", "postal_town", "administrative_area_level_3"),
+      postalCode: find("postal_code"),
+      formattedAddress: result?.formatted_address ?? null,
+    };
+  }
+
+  async function reverseGeocodeAndSelect(position, source) {
+    const latitude = Number(position.lat);
+    const longitude = Number(position.lng);
+    const geocodeRevision = ++state.reverseGeocodeRevision;
+    if (!state.geocoder) {
+      selectLocation({ lat: latitude, lng: longitude }, source, null,
+        "Google address lookup is unavailable, so fibre could only be checked by coordinates.");
+      return;
+    }
+
+    setCustomerPin({ lat: latitude, lng: longitude });
+    elements.latitude.value = latitude.toFixed(6);
+    elements.longitude.value = longitude.toFixed(6);
+    setStatus(elements.location_status, "Finding the closest civic address for this pin…");
+    try {
+      const response = await state.geocoder.geocode({ location: { lat: latitude, lng: longitude } });
+      if (geocodeRevision !== state.reverseGeocodeRevision) return;
+      const results = response.results ?? [];
+      const completeResult = results.find(item => {
+        const address = addressFromGeocoderResult(item);
+        return address.civicNumber && address.route && address.city;
+      });
+      const result = completeResult ?? results.find(item => {
+        const address = addressFromGeocoderResult(item);
+        return address.civicNumber && address.route;
+      }) ?? results[0];
+      const address = result ? addressFromGeocoderResult(result) : null;
+      const hasCivicAddress = Boolean(address?.civicNumber && address?.route && address?.city);
+      selectLocation({ lat: latitude, lng: longitude }, `${source}-geocode`, address,
+        hasCivicAddress
+          ? "Fibre used Google's closest civic-address estimate for the dropped pin."
+          : "Google did not return a complete civic address, so fibre could not be matched.");
+    } catch (error) {
+      console.error("Reverse geocoding failed.", error);
+      if (geocodeRevision !== state.reverseGeocodeRevision) return;
+      selectLocation({ lat: latitude, lng: longitude }, source, null,
+        "Google could not estimate an address. Enable the Geocoding API or search for the address directly.");
+    }
+  }
+
   function renderTowerCoverage() {
     if (!state.map || !state.coverage?.towers) {
       return;
@@ -282,6 +345,8 @@
 
     state.towerRanges.forEach(circle => circle.setMap(null));
     state.towerRanges = [];
+    state.towerLabels.forEach(label => label.setMap(null));
+    state.towerLabels = [];
     state.towerData?.setMap(null);
     state.towerData = new google.maps.Data({ map: state.map });
     const byRow = new Map(state.coverage.towers.map(tower => [tower.rowNumber, tower]));
@@ -291,6 +356,7 @@
       const center = { lat: tower.latitude, lng: tower.longitude };
       bounds.extend(center);
       state.towerData.add({ geometry: new google.maps.Data.Point(center), properties: { rowNumber: tower.rowNumber } });
+      state.towerLabels.push(createTowerLabel(center, tower.name));
       if (tower.candidateEnabled && tower.rangeMetres > 0) {
         state.towerRanges.push(new google.maps.Circle({
           map: state.map,
@@ -340,7 +406,29 @@
     setMapStatus(`${state.coverage.towerCount} towers loaded`, "ready");
   }
 
-  function selectLocation(position, source, address) {
+  function createTowerLabel(position, text) {
+    const overlay = new google.maps.OverlayView();
+    overlay.onAdd = function () {
+      this.labelElement = node("div", { class: "tower-map-label" }, text);
+      this.getPanes().overlayMouseTarget.append(this.labelElement);
+    };
+    overlay.draw = function () {
+      if (!this.labelElement) return;
+      const pixel = this.getProjection().fromLatLngToDivPixel(new google.maps.LatLng(position));
+      const zoom = this.getMap()?.getZoom() ?? 0;
+      this.labelElement.hidden = zoom < 10;
+      this.labelElement.style.left = `${pixel.x}px`;
+      this.labelElement.style.top = `${pixel.y}px`;
+    };
+    overlay.onRemove = function () {
+      this.labelElement?.remove();
+      this.labelElement = null;
+    };
+    overlay.setMap(state.map);
+    return overlay;
+  }
+
+  function selectLocation(position, source, address, notice = null) {
     const latitude = Number(position.lat);
     const longitude = Number(position.lng);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
@@ -349,6 +437,8 @@
     }
 
     state.revision += 1;
+    state.reverseGeocodeRevision += 1;
+    state.locationNotice = notice;
     closeProfile();
     state.customerLocation = { lat: latitude, lng: longitude };
     elements.latitude.value = latitude.toFixed(6);
@@ -366,7 +456,7 @@
       state.customerPin = new google.maps.Circle({
         map: state.map,
         center: position,
-        radius: 110,
+        radius: customerPinRadiusMetres(position.lat, state.map.getZoom()),
         draggable: true,
         fillColor: "#326d91",
         fillOpacity: .95,
@@ -376,11 +466,23 @@
       });
       state.customerPin.addListener("dragend", () => {
         const center = state.customerPin.getCenter();
-        if (center) selectLocation(center.toJSON(), "drag", null);
+        if (center) reverseGeocodeAndSelect(center.toJSON(), "drag");
       });
     } else {
       state.customerPin.setCenter(position);
+      updateCustomerPinSize();
     }
+  }
+
+  function customerPinRadiusMetres(latitude, zoom) {
+    const metresPerPixel = 156543.03392 * Math.cos(Number(latitude) * Math.PI / 180) / (2 ** Math.max(0, Number(zoom) || 0));
+    return Math.max(2, metresPerPixel * 8);
+  }
+
+  function updateCustomerPinSize() {
+    const center = state.customerPin?.getCenter();
+    if (!center || !state.map) return;
+    state.customerPin.setRadius(customerPinRadiusMetres(center.lat(), state.map.getZoom()));
   }
 
   function showLoadingResults() {
@@ -393,7 +495,7 @@
 
   function renderLocationResult(result) {
     const locationText = result.formattedAddress || `${Number(result.latitude).toFixed(6)}, ${Number(result.longitude).toFixed(6)}`;
-    setStatus(elements.location_status, `Showing local results for ${locationText}`, "success");
+    setStatus(elements.location_status, `Showing local results for ${locationText}${state.locationNotice ? ` ${state.locationNotice}` : ""}`, "success");
     renderFibre(result.fibre ?? {});
     renderCandidates(result.candidates ?? [], { lat: result.latitude, lng: result.longitude });
   }
@@ -476,6 +578,8 @@
     state.customerPin?.setMap(null);
     state.customerPin = null;
     state.customerLocation = null;
+    state.locationNotice = null;
+    state.reverseGeocodeRevision += 1;
     state.lastCandidates = [];
     clearCandidatePaths();
     setStatus(elements.location_status, "Choose an address, enter coordinates, or click the map.");
@@ -491,7 +595,6 @@
     state.terrainSamples = null;
     elements.profile_card.hidden = false;
     elements.profile_card.parentElement.classList.add("profile-open");
-    globalThis.requestAnimationFrame(() => state.map && google.maps.event.trigger(state.map, "resize"));
     elements.profile_heading.textContent = "Terrain and Fresnel clearance";
     elements.profile_subtitle.textContent = `${candidate.name} · ${formatNumber(candidate.distanceKilometres, 2)} km path`;
     elements.tower_height.value = String(candidate.heightFeet);
@@ -508,7 +611,6 @@
     state.terrainSamples = null;
     elements.profile_card.hidden = true;
     elements.profile_card.parentElement.classList.remove("profile-open");
-    globalThis.requestAnimationFrame(() => state.map && google.maps.event.trigger(state.map, "resize"));
     elements.clearance_legend.hidden = true;
     elements.profile_output.hidden = true;
     state.chart?.destroy();
@@ -666,7 +768,9 @@
     const lineStatus = profile.isLineOfSightClear ? "Sampled line of sight clear" : "Sampled line of sight obstructed";
     const fresnelStatus = profile.isFresnelReferenceClear ? `${profile.fresnelClearancePercent}% Fresnel reference clear` : `${profile.fresnelClearancePercent}% Fresnel reference obstructed`;
     showProfileStatus(`${lineStatus}; ${fresnelStatus}.`, profile.isLineOfSightClear && profile.isFresnelReferenceClear ? "success" : "warning");
-    elements.profile_summary.textContent = profileSummary(profile);
+    const summary = profileSummary(profile);
+    elements.profile_summary.replaceChildren(...summary.map((item, index) =>
+      node("span", { ...(index === summary.length - 1 ? { class: "profile-disclaimer" } : {}) }, item)));
     renderTerrainChart(profile);
     renderClearancePath(profile);
   }
@@ -682,7 +786,7 @@
       `Endpoint heights: ${formatNumber(profile.customerHeightMetres / .3048, 0)} ft customer · ${formatNumber(profile.towerHeightMetres / .3048, 0)} ft tower`,
       `${profile.samples.length} Google samples · ${formatNumber(profile.sampleSpacingMetres, 1)} m spacing · interpolation resolution ${resolution}`,
       "Approximate sampled planning model only. Unmapped trees/buildings, diffraction, atmospheric variation, and link budget are not evaluated. This is not an installation or service guarantee.",
-    ].join("\n");
+    ];
   }
 
   function renderTerrainChart(profile) {
@@ -691,20 +795,20 @@
       return;
     }
     state.chart?.destroy();
-    const labels = profile.samples.map(sample => sample.distanceMetres / 1000);
-    const dataset = (label, values, extra) => ({ label, data: values, pointRadius: 0, borderWidth: 2, ...extra });
+    const points = selector => profile.samples.map(sample => ({ x: sample.distanceMetres / 1000, y: selector(sample) }));
+    const dataset = (label, selector, extra) => ({ label, data: points(selector), pointRadius: 0, borderWidth: 2, ...extra });
+    const pathDistanceKilometres = profile.distanceMetres / 1000;
     state.chart = new Chart(elements.terrain_chart, {
       type: "line",
       data: {
-        labels,
         datasets: [
-          dataset("Terrain with curvature", profile.samples.map(sample => sample.terrainMetres), { borderColor: "#5f5a50", backgroundColor: "rgba(95,90,80,.22)", fill: "origin", borderWidth: 1 }),
-          dataset("Clutter assumption", profile.samples.map(sample => sample.clutterTopMetres), { borderColor: "#3c7a62", backgroundColor: "rgba(60,122,98,.14)", fill: "-1", borderWidth: 1 }),
-          dataset("Full first Fresnel zone", profile.samples.map(sample => sample.lineOfSightMetres + sample.firstFresnelRadiusMetres), { borderColor: "#4e86a7", backgroundColor: "rgba(78,134,167,.12)", borderDash: [5, 4], borderWidth: 1 }),
-          dataset("Full first Fresnel zone lower", profile.samples.map(sample => sample.lineOfSightMetres - sample.firstFresnelRadiusMetres), { borderColor: "#4e86a7", backgroundColor: "rgba(78,134,167,.12)", borderDash: [5, 4], fill: "-1", borderWidth: 1 }),
-          dataset("Selected Fresnel reference", profile.samples.map(sample => sample.lineOfSightMetres + sample.fresnelReferenceRadiusMetres), { borderColor: "#d66f35", borderDash: [7, 4], borderWidth: 1.5 }),
-          dataset("Selected Fresnel reference lower", profile.samples.map(sample => sample.lineOfSightMetres - sample.fresnelReferenceRadiusMetres), { borderColor: "#d66f35", borderDash: [7, 4], borderWidth: 1.5 }),
-          dataset("Line of sight", profile.samples.map(sample => sample.lineOfSightMetres), { borderColor: "#2f6f73", borderWidth: 3 }),
+          dataset("Terrain with curvature", sample => sample.terrainMetres, { borderColor: "#5f5a50", backgroundColor: "rgba(95,90,80,.22)", fill: "origin", borderWidth: 1 }),
+          dataset("Clutter assumption", sample => sample.clutterTopMetres, { borderColor: "#3c7a62", backgroundColor: "rgba(60,122,98,.14)", fill: "-1", borderWidth: 1 }),
+          dataset("Full first Fresnel zone", sample => sample.lineOfSightMetres + sample.firstFresnelRadiusMetres, { borderColor: "#4e86a7", backgroundColor: "rgba(78,134,167,.12)", borderDash: [5, 4], borderWidth: 1 }),
+          dataset("Full first Fresnel zone lower", sample => sample.lineOfSightMetres - sample.firstFresnelRadiusMetres, { borderColor: "#4e86a7", backgroundColor: "rgba(78,134,167,.12)", borderDash: [5, 4], fill: "-1", borderWidth: 1 }),
+          dataset("Selected Fresnel reference", sample => sample.lineOfSightMetres + sample.fresnelReferenceRadiusMetres, { borderColor: "#d66f35", borderDash: [7, 4], borderWidth: 1.5 }),
+          dataset("Selected Fresnel reference lower", sample => sample.lineOfSightMetres - sample.fresnelReferenceRadiusMetres, { borderColor: "#d66f35", borderDash: [7, 4], borderWidth: 1.5 }),
+          dataset("Line of sight", sample => sample.lineOfSightMetres, { borderColor: "#2f6f73", borderWidth: 3 }),
         ],
       },
       options: {
@@ -717,7 +821,7 @@
           tooltip: { callbacks: { title: items => `${formatNumber(items[0].parsed.x, 3)} km from customer`, label: item => `${item.dataset.label}: ${formatNumber(item.parsed.y, 2)} m` } },
         },
         scales: {
-          x: { type: "linear", title: { display: true, text: "Path distance (km)" }, ticks: { maxTicksLimit: 8 }, grid: { display: false } },
+          x: { type: "linear", min: 0, max: pathDistanceKilometres, bounds: "data", offset: false, title: { display: true, text: "Path distance (km)" }, ticks: { maxTicksLimit: 8, includeBounds: true }, grid: { display: false } },
           y: { title: { display: true, text: "Elevation (m)" } },
         },
       },
