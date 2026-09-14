@@ -36,11 +36,38 @@ jobs:
         run: dotnet test SimpleServiceChecker.sln --configuration Release --no-build
 
       - name: Publish self-contained Windows application
-        run: dotnet publish src/SimpleServiceChecker.App/SimpleServiceChecker.App.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore --output artifacts/proof
+        shell: pwsh
+        run: |
+          ./build/Build-Installer.ps1 `
+            -Version 0.9.0 `
+            -PublishDirectory artifacts/publish-previous `
+            -OutputDirectory artifacts/installer-previous `
+            -SkipRestore
 
-      - name: Upload Windows application build
-        uses: actions/upload-artifact@v4
+      - name: Build current per-user installer
+        shell: pwsh
+        run: |
+          ./build/Build-Installer.ps1 `
+            -Version 1.0.0 `
+            -PublishDirectory artifacts/publish-current `
+            -OutputDirectory artifacts/installer `
+            -SkipRestore
+
+      - name: Test installer lifecycle
+        shell: pwsh
+        run: |
+          ./build/Test-InstallerLifecycle.ps1 `
+            -PreviousInstaller artifacts/installer-previous/StarlingServiceChecker-Setup-0.9.0.exe `
+            -PreviousVersion 0.9.0 `
+            -CurrentInstaller artifacts/installer/StarlingServiceChecker-Setup-1.0.0.exe `
+            -CurrentVersion 1.0.0
+
+      - name: Upload Windows installer proof
+        uses: actions/upload-artifact@v6
         with:
-          name: StarlingServiceChecker-win-x64
-          path: artifacts/proof
+          name: StarlingServiceChecker-unsigned-installer-proof
+          path: |
+            artifacts/installer/StarlingServiceChecker-Setup-1.0.0.exe
+            artifacts/installer/StarlingServiceChecker-Setup-1.0.0.exe.sha256
+            artifacts/installer/StarlingServiceChecker-1.0.0-release.json
           if-no-files-found: error

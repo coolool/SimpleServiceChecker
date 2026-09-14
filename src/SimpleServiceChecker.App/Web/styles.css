@@ -94,6 +94,7 @@ button:hover:not(:disabled) { background: var(--coffee-dark); }
 .badge.neutral { color: #705c4d; background: #eee1d1; }
 .badge.success { color: #fff; background: var(--green); }
 .badge.error { color: #fff; background: var(--red); }
+.version-label { color: #75604e; font-size: 10px; font-weight: 700; }
 
 .result-icon { display: inline-grid; place-items: center; flex: none; width: 34px; height: 34px; color: #fff; border-radius: 9px; font-size: 16px; font-weight: 900; }
 .fibre-icon { background: var(--blue); }

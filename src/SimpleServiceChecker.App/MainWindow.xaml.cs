@@ -54,6 +54,16 @@ public partial class MainWindow : Window
             WebView.Source = new Uri(AppConstants.ApplicationUri);
             LoadingOverlay.Visibility = Visibility.Collapsed;
         }
+        catch (WebView2RuntimeNotFoundException)
+        {
+            LoadingOverlay.Visibility = Visibility.Collapsed;
+            _ = MessageBox.Show(
+                this,
+                "Microsoft Edge WebView2 Runtime is required. Re-run the Starling Service Checker installer while connected to the internet. If installation is blocked, contact your IT support or download WebView2 directly from Microsoft:\n\n" + AppConstants.WebView2DownloadUri,
+                "Starling Service Checker requires WebView2",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
         catch (Exception exception)
         {
             LoadingOverlay.Visibility = Visibility.Collapsed;
@@ -118,6 +128,10 @@ public partial class MainWindow : Window
                     break;
                 case BridgeMessageTypes.RestorePreviousWorkbook:
                     await HandleRestorePreviousWorkbookAsync(message.RequestId);
+                    break;
+                case BridgeMessageTypes.OpenUpdateLocation:
+                    OpenExternalHttpsUri(AppConstants.UpdateLocationUri);
+                    await SendAsync("updateLocationOpened", message.RequestId, new { });
                     break;
                 case BridgeMessageTypes.SelectLocation:
                     await HandleSelectLocationAsync(message);

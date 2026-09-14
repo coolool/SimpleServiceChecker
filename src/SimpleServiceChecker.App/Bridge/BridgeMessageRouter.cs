@@ -16,6 +16,7 @@ public static class BridgeMessageRouter
         BridgeMessageTypes.ReloadWorkbook,
         BridgeMessageTypes.OpenCurrentWorkbook,
         BridgeMessageTypes.RestorePreviousWorkbook,
+        BridgeMessageTypes.OpenUpdateLocation,
         BridgeMessageTypes.SelectLocation,
         BridgeMessageTypes.ClearLocation,
         BridgeMessageTypes.AnalyzeTerrain,

@@ -155,12 +155,16 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 
 ## Phase 4 - Installer and release
 
-- [ ] Produce a per-user Windows installer with no administrator requirement where possible.
-- [ ] Detect or bootstrap the required embedded browser runtime.
-- [ ] Ensure API keys, workbooks, and local data are excluded from packages and Git.
-- [ ] Test install, upgrade, rollback, and uninstall on clean Windows systems.
-- [ ] Publish signed installer artifacts for manual download and add a `Check for updates` link to the chosen download page.
-- [ ] Code-sign release binaries before general distribution.
+- [x] Produce a versioned, per-user Inno Setup definition and repeatable self-contained `win-x64` installer build with no administrator requirement.
+- [x] Detect per-user and per-machine WebView2 Evergreen installations and run Microsoft's signed online bootstrapper only when missing, with bounded failure guidance.
+- [x] Reject API keys, workbooks, signing certificates, manifests, and other local data if they appear in publish output.
+- [x] Add CI lifecycle coverage for install, same-version upgrade, version upgrade, rollback, and uninstall.
+- [x] Add a build-configurable `Check for updates` action that opens only the compiled HTTPS download location.
+- [x] Add a protected tag-driven workflow for SHA-256 checksums, Authenticode signing, signature verification, and draft GitHub release creation.
+- [ ] Configure the final company SharePoint or OneDrive update URL and protected signing environment.
+- [ ] Produce and verify the first signed installer using the company's code-signing certificate.
+- [ ] Test install, launch, upgrade, rollback, and uninstall on clean Windows 10 and Windows 11 x64 systems without Excel, .NET, Git, or developer tools.
+- [ ] Owner accepts Package 6 before Package 7 release-candidate acceptance begins.
 
 ## Release acceptance
 

@@ -41,7 +41,7 @@
   };
 
   const elements = Object.fromEntries([
-    "shell", "sidebar", "sidebar-resizer", "settings-toggle", "settings-close", "settings-panel",
+    "shell", "sidebar", "sidebar-resizer", "settings-toggle", "settings-close", "settings-panel", "app-version", "check-updates",
     "google-key", "save-key", "clear-key", "key-badge", "provider-result",
     "choose-workbook", "activate-workbook", "reload-workbook", "open-current-workbook", "restore-previous-workbook",
     "workbook-selection", "workbook-current", "workbook-current-file", "workbook-activated",
@@ -110,6 +110,7 @@
         setBadge(elements.key_badge, state.apiKeyConfigured ? "Saved locally" : "Not configured", state.apiKeyConfigured ? "success" : "neutral");
         setBadge(elements.workbook_badge, state.workbookConfigured ? "Ready" : "Not configured", state.workbookConfigured ? "success" : "neutral");
         state.canRestorePrevious = Boolean(payload.canRestorePrevious);
+        elements.app_version.textContent = `Version ${payload.version ?? "development"}`;
         updateWorkbookControls();
         if (!state.apiKeyConfigured || !state.workbookConfigured) {
           showSettings(true);
@@ -165,6 +166,8 @@
         state.canRestorePrevious = Boolean(payload.canRestorePrevious);
         setStatus(elements.workbook_result, payload.message ?? "The spreadsheet operation could not be completed. Active coverage was not changed.", "error");
         updateWorkbookControls();
+        break;
+      case "updateLocationOpened":
         break;
       case "googleKeyRejected":
         setBadge(elements.key_badge, "Check key", "error");
@@ -1145,6 +1148,7 @@
     post("saveGoogleKey", { apiKey });
   });
   elements.clear_key.addEventListener("click", () => post("clearGoogleKey"));
+  elements.check_updates.addEventListener("click", () => post("openUpdateLocation"));
   elements.choose_workbook.addEventListener("click", () => post("chooseWorkbook"));
   elements.activate_workbook.addEventListener("click", () => post("activateWorkbook"));
   elements.reload_workbook.addEventListener("click", () => post("reloadWorkbook"));

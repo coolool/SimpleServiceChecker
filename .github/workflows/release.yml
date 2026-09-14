@@ -1,0 +1,147 @@
+name: Signed draft release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to build, such as v1.0.0
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  sign-test-draft:
+    runs-on: windows-latest
+    environment: production-signing
+    env:
+      REQUESTED_TAG: ${{ inputs.tag }}
+      UPDATE_LOCATION_URL: ${{ vars.UPDATE_LOCATION_URL }}
+      TIMESTAMP_URL: ${{ vars.CODE_SIGNING_TIMESTAMP_URL }}
+      SIGNING_PFX_BASE64: ${{ secrets.CODE_SIGNING_PFX_BASE64 }}
+      SIGNING_PFX_PASSWORD: ${{ secrets.CODE_SIGNING_PASSWORD }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Resolve and validate release version
+        shell: pwsh
+        run: |
+          $tag = if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') { $env:REQUESTED_TAG } else { $env:GITHUB_REF_NAME }
+          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Release tag must use vMAJOR.MINOR.PATCH."
+          }
+          git rev-parse --verify "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) { throw "Tag $tag does not exist." }
+          "RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "RELEASE_VERSION=$($tag.Substring(1))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Require protected release configuration
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:UPDATE_LOCATION_URL) -or $env:UPDATE_LOCATION_URL -notmatch '^https://') {
+            throw 'Set the production-signing environment variable UPDATE_LOCATION_URL to the company SharePoint or OneDrive download page.'
+          }
+          if ([string]::IsNullOrWhiteSpace($env:TIMESTAMP_URL) -or $env:TIMESTAMP_URL -notmatch '^https://') {
+            throw 'Set CODE_SIGNING_TIMESTAMP_URL in the production-signing environment.'
+          }
+          if ([string]::IsNullOrWhiteSpace($env:SIGNING_PFX_BASE64) -or [string]::IsNullOrWhiteSpace($env:SIGNING_PFX_PASSWORD)) {
+            throw 'Configure CODE_SIGNING_PFX_BASE64 and CODE_SIGNING_PASSWORD as protected environment secrets.'
+          }
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+
+      - name: Restore, build, and test
+        shell: pwsh
+        run: |
+          dotnet restore SimpleServiceChecker.sln --locked-mode
+          dotnet build SimpleServiceChecker.sln --configuration Release --no-restore
+          node --check src/SimpleServiceChecker.App/Web/app.js
+          dotnet test SimpleServiceChecker.sln --configuration Release --no-build
+
+      - name: Import code-signing certificate
+        shell: pwsh
+        run: |
+          $pfxPath = Join-Path $env:RUNNER_TEMP 'starling-code-signing.pfx'
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:SIGNING_PFX_BASE64))
+          $password = ConvertTo-SecureString $env:SIGNING_PFX_PASSWORD -AsPlainText -Force
+          $certificate = Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          if ($null -eq $certificate -or -not $certificate.HasPrivateKey) {
+            throw 'The protected code-signing certificate could not be imported.'
+          }
+          $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -File |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if ($null -eq $signTool) { throw 'signtool.exe was not found on the runner.' }
+          "SIGNING_CERT_SHA1=$($certificate.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "SIGNTOOL_PATH=$($signTool.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "SIGNING_PFX_PATH=$pfxPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build signed installer
+        shell: pwsh
+        run: |
+          ./build/Build-Installer.ps1 `
+            -Version $env:RELEASE_VERSION `
+            -UpdateLocationUrl $env:UPDATE_LOCATION_URL `
+            -SkipRestore `
+            -SignToolPath $env:SIGNTOOL_PATH `
+            -SigningCertificateThumbprint $env:SIGNING_CERT_SHA1 `
+            -TimestampUrl $env:TIMESTAMP_URL
+
+      - name: Verify signed install, upgrade, and uninstall
+        shell: pwsh
+        run: |
+          ./build/Test-InstallerLifecycle.ps1 `
+            -CurrentInstaller "artifacts/installer/StarlingServiceChecker-Setup-$env:RELEASE_VERSION.exe" `
+            -CurrentVersion $env:RELEASE_VERSION `
+            -VerifySignatures `
+            -SignToolPath $env:SIGNTOOL_PATH
+
+      - name: Create or update draft release
+        shell: pwsh
+        run: |
+          $assets = @(
+            "artifacts/installer/StarlingServiceChecker-Setup-$env:RELEASE_VERSION.exe",
+            "artifacts/installer/StarlingServiceChecker-Setup-$env:RELEASE_VERSION.exe.sha256",
+            "artifacts/installer/StarlingServiceChecker-$env:RELEASE_VERSION-release.json"
+          )
+          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:RELEASE_TAG @assets --repo $env:GITHUB_REPOSITORY --clobber
+            if ($LASTEXITCODE -ne 0) { throw 'Could not update draft release assets.' }
+          }
+          else {
+            gh release create $env:RELEASE_TAG @assets --repo $env:GITHUB_REPOSITORY --verify-tag --draft --generate-notes --title "Starling Service Checker $env:RELEASE_VERSION"
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create the draft release.' }
+          }
+
+      - name: Upload signed release evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: StarlingServiceChecker-${{ env.RELEASE_VERSION }}-signed
+          path: artifacts/installer
+          if-no-files-found: error
+
+      - name: Remove certificate material
+        if: always()
+        shell: pwsh
+        run: |
+          if (-not [string]::IsNullOrWhiteSpace($env:SIGNING_CERT_SHA1)) {
+            Remove-Item -LiteralPath "Cert:\CurrentUser\My\$env:SIGNING_CERT_SHA1" -Force -ErrorAction SilentlyContinue
+          }
+          if (-not [string]::IsNullOrWhiteSpace($env:SIGNING_PFX_PATH)) {
+            Remove-Item -LiteralPath $env:SIGNING_PFX_PATH -Force -ErrorAction SilentlyContinue
+          }

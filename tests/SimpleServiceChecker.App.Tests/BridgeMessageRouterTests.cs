@@ -14,6 +14,7 @@ public sealed class BridgeMessageRouterTests
     [InlineData(BridgeMessageTypes.ReloadWorkbook)]
     [InlineData(BridgeMessageTypes.OpenCurrentWorkbook)]
     [InlineData(BridgeMessageTypes.RestorePreviousWorkbook)]
+    [InlineData(BridgeMessageTypes.OpenUpdateLocation)]
     public void TryParse_AcceptsAnAllowedVersionedWorkbookMessage(string messageType)
     {
         var json = JsonSerializer.Serialize(new
@@ -36,6 +37,13 @@ public sealed class BridgeMessageRouterTests
     {
         Assert.Equal("app.simpleservicechecker.local", AppConstants.VirtualHostName);
         Assert.Equal("https://app.simpleservicechecker.local/index.html", AppConstants.ApplicationUri);
+    }
+
+    [Fact]
+    public void ReleaseLinks_AreHttpsAndUpdateLocationIsBuildConfigured()
+    {
+        Assert.StartsWith("https://", AppConstants.WebView2DownloadUri, StringComparison.Ordinal);
+        Assert.StartsWith("https://", AppConstants.UpdateLocationUri, StringComparison.Ordinal);
     }
 
     [Fact]
