@@ -54,9 +54,22 @@ function Reset-GeneratedDirectory {
 function Invoke-Checked {
     param([string]$Command, [string[]]$Arguments)
 
-    & $Command @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "$Command failed with exit code $LASTEXITCODE."
+    $startInfo = [Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $Command
+    $startInfo.UseShellExecute = $false
+    foreach ($argument in $Arguments) {
+        $startInfo.ArgumentList.Add($argument)
+    }
+
+    $process = [Diagnostics.Process]::Start($startInfo)
+    try {
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) {
+            throw "$Command failed with exit code $($process.ExitCode)."
+        }
+    }
+    finally {
+        $process.Dispose()
     }
 }
 
