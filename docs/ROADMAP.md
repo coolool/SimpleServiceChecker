@@ -100,7 +100,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - [x] Recalculate height, clutter, frequency, Fresnel percentage, and Earth-model changes locally from the current samples without another Google request.
 - [x] Render the tall Chart.js terrain/Fresnel profile and the approved black/red/orange/yellow/green clearance path with labelled legends and non-colour status text.
 - [x] Return safe quota, billing/key, denied, invalid-request, unavailable-data, timeout, and offline states without exposing provider diagnostics.
-- [ ] Owner accepts Package 4 before Package 5 spreadsheet-management work begins.
+- [x] Owner accepts Package 4 before Package 5 spreadsheet-management work begins (September 14, 2026).
 
 #### Package 4 implementation evidence
 
@@ -108,7 +108,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - Automated tests: 83 pass across Core and App. New tests cover the analytical 10 km/5.8 GHz Fresnel midpoint, endpoint radii, standard/geometric/flat Earth models, independent endpoint heights, 0/60/100% reference settings, obstruction, exact clearance thresholds, bounded samples, malformed settings, incomplete responses, and geographically mismatched samples.
 - Browser JavaScript syntax validation and the self-contained `win-x64` publish both pass.
 - Elevation remains an on-demand Google client call. The application has no elevation backend, cache, database, search history, telemetry, ISED layer, or fibre overlay.
-- Manual Package 4 visual and live-Elevation acceptance remain the blocking gate.
+- Owner completed a live functional review and approved Package 4 on September 14, 2026. No screenshot evidence is claimed for this acceptance.
 
 ## Phase 3 - Spreadsheet management
 

@@ -4,7 +4,7 @@ SimpleServiceChecker is a low-maintenance Windows desktop application for sales 
 
 ## Status
 
-Packages 1, 2, and 3 are accepted. Package 4 terrain, line-clearance, and Fresnel plotting is implemented and ready for owner acceptance.
+Packages 1 through 4 are accepted. Package 5 spreadsheet management and recovery is next.
 
 ## Product boundaries
 
@@ -35,7 +35,7 @@ dotnet publish src\SimpleServiceChecker.App\SimpleServiceChecker.App.csproj --co
 
 The application does not require Excel or a separately installed .NET runtime. It currently requires the Microsoft Edge WebView2 Evergreen Runtime; installer detection and bootstrap belong to Package 6.
 
-See [Package 3 sales-map checklist](docs/PACKAGE_3_SALES_MAP.md) for the current manual acceptance gate.
+See [Package 4 terrain checklist](docs/PACKAGE_4_TERRAIN.md) for the accepted terrain and Fresnel implementation.
 
 ## Repository safety
 
