@@ -181,7 +181,7 @@ public partial class MainWindow : Window
 
     private async Task SendAsync(string type, string? requestId, object payload)
     {
-        var message = JsonSerializer.Serialize(new
+        var message = BridgeJson.Serialize(new
         {
             version = BridgeMessageRouter.CurrentVersion,
             type,

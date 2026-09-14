@@ -27,11 +27,13 @@
 ### Package 1 evidence
 
 - Release build: succeeded with zero warnings and zero errors on Windows 10 x64.
-- Automated tests: 12 passed, including bridge allow-listing, stable HTTPS origin, per-user key encryption, malformed-workbook recovery, and synthetic workbook validation.
+- Automated tests: 13 passed, including bridge allow-listing, stable HTTPS origin, per-user key encryption, camel-case result serialization, malformed-workbook recovery, and synthetic workbook validation.
 - Supplied workbook: validated read-only outside the repository with 224 tower rows and 16 fibre rows.
 - Packaging: unsigned self-contained `win-x64` proof published successfully; .NET is included and WebView2 Evergreen remains an external runtime until Package 6.
 - GitHub Actions: Windows restore, build, 12 tests, JavaScript syntax check, self-contained publish, and proof-artifact upload passed in pull request 1.
-- Live restricted-key proof, visual comparison, Windows 11 review, and owner acceptance remain pending.
+- Owner-feedback revision: white Places input, corrected workbook-result display, clearance-coloured synthetic map path with the established five thresholds, and a taller terrain/Fresnel profile.
+- Owner screenshot: Maps JavaScript, Places (New), and Elevation all passed with the company key on the stable local HTTPS application origin.
+- Visual comparison after the owner-feedback revision, Windows 11 review, and owner acceptance remain pending.
 
 No production installer work should begin until this proof is accepted.
 

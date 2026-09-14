@@ -28,6 +28,24 @@ public sealed class BridgeMessageRouterTests
     }
 
     [Fact]
+    public void BridgeJson_UsesCamelCaseForNestedNativeResults()
+    {
+        var json = BridgeJson.Serialize(new
+        {
+            IsValid = true,
+            Sheets = new[]
+            {
+                new { Name = "Tower Coverage", DataRowCount = 224 },
+            },
+        });
+
+        Assert.Contains("\"isValid\":true", json, StringComparison.Ordinal);
+        Assert.Contains("\"sheets\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"name\":\"Tower Coverage\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"dataRowCount\":224", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void GoogleKeyStore_RoundTripsAndClearsForTheCurrentWindowsUser()
     {
         var directory = Path.Combine(Path.GetTempPath(), $"ssc-key-{Guid.NewGuid():N}");

@@ -195,7 +195,6 @@
     const tower = { lat: 46.43, lng: -84.29 };
     new google.maps.Circle({ map: state.map, center: subscriber, radius: 450, fillColor: "#326d91", fillOpacity: 0.9, strokeColor: "#fffaf2", strokeWeight: 2 });
     new google.maps.Circle({ map: state.map, center: tower, radius: 600, fillColor: "#d66f35", fillOpacity: 0.9, strokeColor: "#fffaf2", strokeWeight: 2 });
-    new google.maps.Polyline({ map: state.map, path: [subscriber, tower], strokeColor: "#d66f35", strokeWeight: 3 });
     new google.maps.Circle({ map: state.map, center: tower, radius: 18000, fillColor: "#d66f35", fillOpacity: 0.08, strokeColor: "#d66f35", strokeOpacity: 0.4 });
     setProof(elements.mapProof, "pass");
 
@@ -224,14 +223,77 @@
     const elevationService = new google.maps.ElevationService();
     const response = await elevationService.getElevationAlongPath({
       path: [origin, destination],
-      samples: 16,
+      samples: 64,
     });
     const samples = Array.isArray(response) ? response : response.results;
-    if (!samples?.length) {
+    if (!samples || samples.length < 2) {
       throw new Error("Elevation returned no samples.");
     }
 
+    drawClearancePath(samples);
     setProof(elements.elevationProof, "pass");
+  }
+
+  function drawClearancePath(samples) {
+    const metresPerFoot = 0.3048;
+    const cpeHeightMetres = 25 * metresPerFoot;
+    const towerHeightMetres = 100 * metresPerFoot;
+    const clutterHeightMetres = 50 * metresPerFoot;
+    const startLineHeight = samples[0].elevation + cpeHeightMetres;
+    const endLineHeight = samples.at(-1).elevation + towerHeightMetres;
+    const lastIndex = samples.length - 1;
+    const segmentColours = [];
+
+    for (let index = 1; index <= lastIndex; index += 1) {
+      const progress = index / lastIndex;
+      const lineHeight = startLineHeight + ((endLineHeight - startLineHeight) * progress);
+      const clearance = lineHeight - (samples[index].elevation + clutterHeightMetres);
+      segmentColours[index] = clearanceColour(clearance);
+    }
+
+    let runStart = 0;
+    let runColour = segmentColours[1] ?? "#2e8b57";
+    for (let index = 2; index <= lastIndex; index += 1) {
+      const colour = segmentColours[index] ?? "#2e8b57";
+      if (colour === runColour) {
+        continue;
+      }
+
+      drawClearanceSegment(samples.slice(runStart, index), runColour);
+      runStart = index - 1;
+      runColour = colour;
+    }
+
+    drawClearanceSegment(samples.slice(runStart), runColour);
+  }
+
+  function drawClearanceSegment(samples, strokeColor) {
+    new google.maps.Polyline({
+      map: state.map,
+      path: samples.map(sample => sample.location),
+      geodesic: true,
+      clickable: false,
+      strokeColor,
+      strokeOpacity: 1,
+      strokeWeight: 5,
+      zIndex: 90,
+    });
+  }
+
+  function clearanceColour(clearanceMetres) {
+    if (clearanceMetres <= 0) {
+      return "#111";
+    }
+    if (clearanceMetres <= 3.048) {
+      return "#d62828";
+    }
+    if (clearanceMetres <= 9.144) {
+      return "#e8842f";
+    }
+    if (clearanceMetres <= 15.24) {
+      return "#d9b51c";
+    }
+    return "#2e8b57";
   }
 
   function renderSyntheticChart() {
@@ -251,7 +313,7 @@
         labels,
         datasets: [
           { label: "Terrain", data: terrain, borderColor: "#455b51", backgroundColor: "rgba(69, 91, 81, 0.2)", fill: "origin", tension: 0.35, pointRadius: 0 },
-          { label: "Line of sight", data: lineOfSight, borderColor: "#d66f35", borderWidth: 3, pointRadius: 0 },
+          { label: "Line of sight", data: lineOfSight, borderColor: "#2f6f73", borderWidth: 3, pointRadius: 0 },
           { label: "Fresnel upper", data: fresnelUpper, borderColor: "rgba(64, 132, 123, 0.8)", borderDash: [6, 5], pointRadius: 0 },
           { label: "Fresnel lower", data: fresnelLower, borderColor: "rgba(64, 132, 123, 0.8)", backgroundColor: "rgba(64, 132, 123, 0.12)", borderDash: [6, 5], pointRadius: 0, fill: "-1" },
         ],

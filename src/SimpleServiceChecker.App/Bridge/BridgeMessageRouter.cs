@@ -21,10 +21,7 @@ public static class BridgeMessageRouter
 
         try
         {
-            message = JsonSerializer.Deserialize<BridgeMessage>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-            });
+            message = BridgeJson.Deserialize<BridgeMessage>(json);
         }
         catch (JsonException)
         {
