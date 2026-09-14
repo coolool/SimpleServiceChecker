@@ -57,7 +57,7 @@ Package 1 is accepted. Real workbook towers are intentionally deferred to Packag
 - [x] Keep local fibre and tower calculations usable from known coordinates when Google is unavailable.
 - [x] Cancel superseded location calculations and reject stale browser results by revision.
 - [x] Add keyboard labels, visible focus, keyboard sidebar resizing, and compact laptop-height behavior.
-- [ ] Owner accepts Package 3 before Package 4 terrain and Fresnel work begins.
+- [x] Owner accepts Package 3 before Package 4 terrain and Fresnel work begins (September 14, 2026).
 
 #### Package 3 implementation evidence
 
@@ -65,7 +65,7 @@ Package 1 is accepted. Real workbook towers are intentionally deferred to Packag
 - Automated tests: 58 pass across Core and App, including validated workbook activation/reload, invalid-replacement retention, structured route transfer, invalid coordinate rejection, fibre matching, and wireless candidate calculations.
 - Browser JavaScript passes the syntax check. The normal workflow does not request Elevation; Package 4 will request it only when a candidate profile is opened.
 - The source workbook path, Google API key, selected address, and coordinates are neither logged nor written to application preferences. Only the encrypted key and validated local workbook copy persist.
-- Manual Package 3 screenshot and owner acceptance remain the blocking gate.
+- Owner completed a live functional review and approved Package 3 on September 14, 2026. No screenshot evidence is claimed for this acceptance.
 
 ### Package 2 - Coverage domain and workbook validation
 

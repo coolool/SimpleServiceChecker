@@ -1,5 +1,7 @@
 # Package 3 sales map
 
+Status: Owner accepted after a live functional review on September 14, 2026. No screenshot evidence is claimed.
+
 Package 3 connects the accepted coverage domain to the salesperson-facing desktop interface. Package 4 terrain and Fresnel work must not begin until the owner accepts this package.
 
 ## Primary workflow
