@@ -19,8 +19,8 @@
 ## Phase 1 - Technical proof
 
 - [x] Create a minimal Windows shell with the selected embedded web renderer (September 14, 2026).
-- [ ] Verify Google Maps, Places, and Elevation with a company-owned restricted test key.
-- [ ] Verify the stable local application origin used by Google key restrictions.
+- [x] Verify Google Maps, Places, and Elevation with a company-owned test key (September 14, 2026).
+- [x] Verify the stable local application origin used by Google key restrictions (September 14, 2026).
 - [x] Import and validate the supplied workbook without Excel installed (September 14, 2026).
 - [ ] Confirm map and terrain rendering on representative Windows computers.
 
@@ -33,9 +33,10 @@
 - GitHub Actions: Windows restore, build, 12 tests, JavaScript syntax check, self-contained publish, and proof-artifact upload passed in pull request 1.
 - Owner-feedback revision: white Places input, corrected workbook-result display, clearance-coloured synthetic map path with the established five thresholds, and a taller terrain/Fresnel profile.
 - Owner screenshot: Maps JavaScript, Places (New), and Elevation all passed with the company key on the stable local HTTPS application origin.
-- Visual comparison after the owner-feedback revision, Windows 11 review, and owner acceptance remain pending.
+- Owner accepted the revised proof on Windows 10 with the supplied workbook on September 14, 2026. The acceptance screenshot contains no key, real address, or tower name.
+- Windows 11 clean-machine confirmation remains tracked for the Package 6/7 acceptance matrix; it is not claimed by this proof.
 
-No production installer work should begin until this proof is accepted.
+Package 1 is accepted. Real workbook towers are intentionally deferred to Packages 2 and 3; Package 1 only validates the workbook contract and demonstrates a synthetic path.
 
 ## Phase 2 - Sales workflow
 
