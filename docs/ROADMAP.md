@@ -189,7 +189,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 
 - Annotated tag `v1.0.0` resolves to approved Package 6 merge commit `ad13a60fea8cb8b56e0d905c229c2ea4948cff6a`.
 - Public unsigned draft-release workflow run `34968324929` passed build, all 96 tests, lifecycle installation, artifact verification, and draft upload in 3 minutes 16 seconds.
-- The exact draft installer has verified SHA-256 `cbdb2a3f5f036177cb827d70e8b4557ceb8e4c6a3cb38d5ced03f1d296f8767f`, matches its manifest and source provenance, is unsigned, and independently passed install, same-version upgrade, and uninstall on Windows 10.
+- The exact draft installer has verified SHA-256 `cbdb2a3f5f036177cb827d70e8b4557ceb8e4c6a3cb38d5ced03f1d296f8767f`, matches its manifest and source provenance, is unsigned, and independently passed install, a bounded 12-second application-startup smoke test, same-version upgrade, and uninstall on Windows 10.
 - Anonymous access reaches the public repository, while the unpublished draft URL returns `404` and the public latest-release page exposes no installer.
 - Windows 11 laptop acceptance and explicit owner publication approval remain open. The release is still a draft.
 
