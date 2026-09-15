@@ -27,6 +27,17 @@ jobs:
           cache: true
           cache-dependency-path: "**/packages.lock.json"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install visual-test dependencies
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+        run: npm ci
+
       - name: Restore locked dependencies and Windows runtime pack
         run: dotnet restore SimpleServiceChecker.sln --locked-mode
 
@@ -38,6 +49,16 @@ jobs:
 
       - name: Test
         run: dotnet test SimpleServiceChecker.sln --configuration Release --no-build
+
+      - name: Test desktop visual layout
+        run: npm run test:visual
+
+      - name: Upload visual smoke proof
+        uses: actions/upload-artifact@v6
+        with:
+          name: StarlingServiceChecker-visual-smoke
+          path: output/playwright/*.png
+          if-no-files-found: error
 
       - name: Build previous-version installer fixture
         shell: pwsh

@@ -164,10 +164,10 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - [x] Add a build-configurable `Check for updates` action that opens only the compiled HTTPS download location.
 - [x] Add a manually triggered workflow for SHA-256 checksums, source provenance, unsigned-policy verification, and draft release creation in the separate public repository.
 - [x] Configure the final public `releases/latest` URL in the application, installer, manifest, tests, and release automation.
-- [ ] Configure the narrowly scoped `PUBLIC_RELEASE_TOKEN` Actions secret in the private source repository.
-- [ ] Produce and verify the first public-channel unsigned installer from an annotated tag on `main`.
+- [x] Configure the narrowly scoped `PUBLIC_RELEASE_TOKEN` Actions secret in the private source repository (September 15, 2026; name verified without reading its value).
+- [x] Produce and verify the first public-channel unsigned installer from annotated tag `v1.0.0` on `main` while retaining it as a draft (September 15, 2026).
 - [ ] Test install, launch, upgrade, rollback, and uninstall on clean Windows 10 and Windows 11 x64 systems without Excel, .NET, Git, or developer tools.
-- [ ] Owner accepts Package 6 before Package 7 release-candidate acceptance begins.
+- [x] Owner accepts Package 6 and authorizes Package 7 to begin with the public-token, final-draft, and clean-machine items carried forward (September 14, 2026).
 
 ### Package 6 implementation evidence
 
@@ -180,10 +180,25 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - The downloaded `1.0.0` CI proof from commit `9ee9cc6` has verified SHA-256 `a9956847bc9e65644545221b5e33fac9744b27ecc353d1a1bf7b8704eed85913` and independently passes install, same-version upgrade, and uninstall under the normal user token on Windows 10 Home 22H2 (build 19045).
 - Installer lifecycle failures retain no log but surface bounded fatal/error lines before cleanup, making environmental failures such as a denied per-user uninstall-registry write distinguishable from application packaging failures.
 - The owner approved a public binary-only release repository and an intentionally unsigned installer on September 14, 2026. The public repository contains no application source or company data.
-- The existing proof artifact predates the final public URL/provenance revision and is not the distributable release candidate.
-- Public-release token configuration, the final public-channel draft, clean Windows 10/11 launch testing, and owner acceptance remain open and are not claimed by this evidence.
+- The final Package 6 CI run `34903893620` passed all 96 tests plus installer build, lifecycle, manifest, checksum, provenance, public-URL, repository-safety, JavaScript, and unsigned-policy checks.
+- The downloaded final Package 6 CI installer has verified SHA-256 `6a9322ab31e4640ff3dcb38531122a6edfaf8bbd6117be8f92527d17dd0130a2` and independently passed install, same-version upgrade, and uninstall on Windows 10 Home 22H2 (build 19045).
+- The public release repository was verified public with only its safety/download README; Issues and Wiki are disabled, and no installer has been published prematurely.
+- The owner approved Package 6 on September 14, 2026. Public-token configuration, the final public-channel draft, and clean Windows 11 testing remain Package 7 acceptance items rather than Package 6 claims.
+
+### Package 7 release-candidate evidence
+
+- Annotated tag `v1.0.0` resolves to approved Package 6 merge commit `ad13a60fea8cb8b56e0d905c229c2ea4948cff6a`.
+- Public unsigned draft-release workflow run `34968324929` passed build, all 96 tests, lifecycle installation, artifact verification, and draft upload in 3 minutes 16 seconds.
+- The exact draft installer has verified SHA-256 `cbdb2a3f5f036177cb827d70e8b4557ceb8e4c6a3cb38d5ced03f1d296f8767f`, matches its manifest and source provenance, is unsigned, and independently passed install, a bounded 12-second application-startup smoke test, same-version upgrade, and uninstall on Windows 10.
+- Anonymous access reaches the public repository, while the unpublished draft URL returns `404` and the public latest-release page exposes no installer.
+- Automated Playwright smoke tests use only synthetic data and the packaged application assets. Pull-request run `34971661676` passed both 1366×768 and 1920×1080 baselines and published the two screenshots as a private CI proof artifact; the current suite also asserts all four fibre states, zero/one/many tower rendering, stale-result rejection, profile minimize/restore/close, and visible keyboard focus.
+- The owner reports that the exact draft installer downloaded and worked flawlessly on the test laptop on September 15, 2026. Windows edition/version/build and detailed checklist notes were not recorded.
+- Explicit owner publication approval remains open. The release is still a draft.
+- The public download channel now includes a blank, data-free two-tab coverage workbook. Future draft releases fetch it from the public binary repository, verify its pinned SHA-256, validate it with the application workbook reader, and attach it beside the installer.
 
 ## Release acceptance
+
+Package 7 evidence and open gates are tracked in `PACKAGE_7_RELEASE_ACCEPTANCE.md`.
 
 - A salesperson can install the application without developer tools or Excel.
 - A first-time user can configure a company Google key and select a valid workbook.

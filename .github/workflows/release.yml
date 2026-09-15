@@ -18,6 +18,9 @@ jobs:
       REQUESTED_TAG: ${{ inputs.tag }}
       RELEASE_REPOSITORY: coolool/StarlingServiceChecker-Releases
       UPDATE_LOCATION_URL: https://github.com/coolool/StarlingServiceChecker-Releases/releases/latest
+      COVERAGE_TEMPLATE_NAME: StarlingServiceChecker-Coverage-Template.xlsx
+      COVERAGE_TEMPLATE_URL: https://raw.githubusercontent.com/coolool/StarlingServiceChecker-Releases/main/StarlingServiceChecker-Coverage-Template.xlsx
+      COVERAGE_TEMPLATE_SHA256: 50f5c1a7f7e504683fbb44907661e1dc3eb02420314a7c45d38395fd7480f73e
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v5
@@ -81,6 +84,22 @@ jobs:
             -CurrentInstaller "artifacts/installer/StarlingServiceChecker-Setup-$env:RELEASE_VERSION.exe" `
             -CurrentVersion $env:RELEASE_VERSION
 
+      - name: Download and validate blank coverage template
+        shell: pwsh
+        run: |
+          $templatePath = Join-Path 'artifacts/installer' $env:COVERAGE_TEMPLATE_NAME
+          Invoke-WebRequest -Uri $env:COVERAGE_TEMPLATE_URL -OutFile $templatePath
+          $actualHash = (Get-FileHash -LiteralPath $templatePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne $env:COVERAGE_TEMPLATE_SHA256) {
+            throw "Coverage template SHA-256 mismatch. Expected $env:COVERAGE_TEMPLATE_SHA256 but found $actualHash."
+          }
+          $env:SSC_TEST_TEMPLATE = [IO.Path]::GetFullPath($templatePath)
+          dotnet test tests/SimpleServiceChecker.Core.Tests/SimpleServiceChecker.Core.Tests.csproj `
+            --configuration Release `
+            --no-build `
+            --no-restore `
+            --filter FullyQualifiedName~ReleaseTemplate_ContainsOnlyTheRequiredBlankWorkbookContract
+
       - name: Verify public release artifacts
         shell: pwsh
         run: |
@@ -90,6 +109,7 @@ jobs:
             -ExpectedUpdateLocationUrl $env:UPDATE_LOCATION_URL `
             -ExpectedSourceRepository $env:GITHUB_REPOSITORY `
             -ExpectedSourceCommit $env:SOURCE_COMMIT `
+            -ExpectedCoverageTemplateSha256 $env:COVERAGE_TEMPLATE_SHA256 `
             -RequireGitHubReleasesUpdateLocation
 
       - name: Upload private workflow evidence
@@ -110,12 +130,15 @@ jobs:
           $assets = @(
             "artifacts/installer/StarlingServiceChecker-Setup-$env:RELEASE_VERSION.exe",
             "artifacts/installer/StarlingServiceChecker-Setup-$env:RELEASE_VERSION.exe.sha256",
-            "artifacts/installer/StarlingServiceChecker-$env:RELEASE_VERSION-release.json"
+            "artifacts/installer/StarlingServiceChecker-$env:RELEASE_VERSION-release.json",
+            "artifacts/installer/$env:COVERAGE_TEMPLATE_NAME"
           )
           $notes = @"
           Starling Service Checker $env:RELEASE_VERSION
 
           This Windows installer is intentionally unsigned. Windows may show an Unknown publisher or Microsoft Defender SmartScreen warning. Download only from this official repository. If your organization's policy blocks unsigned applications, contact your IT team and do not disable security controls.
+
+          A blank coverage workbook is included as $env:COVERAGE_TEMPLATE_NAME. It contains the required Tower Coverage and Fibre Coverage tabs and no company data. Keep the worksheet names and header row unchanged while entering coverage.
 
           Source repository: $env:GITHUB_REPOSITORY
           Source commit: $env:SOURCE_COMMIT
