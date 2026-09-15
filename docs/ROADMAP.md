@@ -194,6 +194,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - Automated Playwright smoke tests use only synthetic data and the packaged application assets. Pull-request run `34971661676` passed both 1366×768 and 1920×1080 baselines and published the two screenshots as a private CI proof artifact; the current suite also asserts all four fibre states, zero/one/many tower rendering, stale-result rejection, profile minimize/restore/close, and visible keyboard focus.
 - The owner reports that the exact draft installer downloaded and worked flawlessly on the test laptop on September 15, 2026. Windows edition/version/build and detailed checklist notes were not recorded.
 - Explicit owner publication approval remains open. The release is still a draft.
+- The public download channel now includes a blank, data-free two-tab coverage workbook. Future draft releases fetch it from the public binary repository, verify its pinned SHA-256, validate it with the application workbook reader, and attach it beside the installer.
 
 ## Release acceptance
 

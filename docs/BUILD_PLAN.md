@@ -19,6 +19,7 @@ The application must preserve the recognizable Service Checker map, warm sidebar
 - Google Maps defaults to satellite imagery, allows the four standard map types, and offers Street View from the customer-location card only when nearby official imagery is available.
 - Wireless plots include first Fresnel-zone clearance with defaults of 5.8 GHz, 60%, and effective-earth-radius factor 4/3.
 - An intentionally unsigned per-user installer is distributed through the public, binary-only `coolool/StarlingServiceChecker-Releases` repository; the source repository remains private.
+- The public release also carries a reviewed blank coverage workbook; release automation verifies its pinned SHA-256 and exact two-tab contract before attachment.
 - Updates are manual. `Check for Updates` opens the fixed company download location.
 
 ## 3. Source baselines

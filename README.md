@@ -9,6 +9,7 @@ Packages 1 through 6 and the map, Street View, Geocoding, legend, icon, branding
 ## Product boundaries
 
 - Coverage comes from a user-selected Excel workbook with `Tower Coverage` and `Fibre Coverage` sheets.
+- Each public release includes a blank, data-free coverage workbook with those required sheets and headers.
 - The application does not require Excel, a database, a web server, or a company backend.
 - Each company supplies and manages its own Google Maps Platform key.
 - Fibre is shown as an address availability result; a fibre map overlay is intentionally excluded.
@@ -56,4 +57,4 @@ See [Package 7 release-candidate acceptance](docs/PACKAGE_7_RELEASE_ACCEPTANCE.m
 
 ## Repository safety
 
-Do not commit coverage workbooks, API keys, credentials, customer information, generated installers, or local application data.
+Do not commit populated coverage workbooks, API keys, credentials, customer information, generated installers, or local application data. The only workbook permitted for public distribution is the reviewed blank release template, which is stored in the separate binary-only release repository and pinned by SHA-256 in release automation.

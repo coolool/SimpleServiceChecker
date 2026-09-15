@@ -89,6 +89,41 @@ public sealed class WorkbookProbeTests
         Assert.Equal(16, result.Sheets.Single(sheet => sheet.Name == WorkbookProbe.FibreSheetName).DataRowCount);
     }
 
+    [Fact]
+    public void ReleaseTemplate_ContainsOnlyTheRequiredBlankWorkbookContract()
+    {
+        var templatePath = Environment.GetEnvironmentVariable("SSC_TEST_TEMPLATE");
+        if (string.IsNullOrWhiteSpace(templatePath))
+        {
+            return;
+        }
+
+        using (var workbook = new XLWorkbook(templatePath))
+        {
+            Assert.Equal(
+                [WorkbookProbe.TowerSheetName, WorkbookProbe.FibreSheetName],
+                workbook.Worksheets.Select(sheet => sheet.Name));
+
+            Assert.Equal(
+                WorkbookProbe.TowerHeaders,
+                ReadHeaders(workbook.Worksheet(WorkbookProbe.TowerSheetName), WorkbookProbe.TowerHeaders.Count));
+            Assert.Equal(
+                WorkbookProbe.FibreHeaders,
+                ReadHeaders(workbook.Worksheet(WorkbookProbe.FibreSheetName), WorkbookProbe.FibreHeaders.Count));
+
+            Assert.Equal(1, workbook.Worksheet(WorkbookProbe.TowerSheetName).LastRowUsed()!.RowNumber());
+            Assert.Equal(1, workbook.Worksheet(WorkbookProbe.FibreSheetName).LastRowUsed()!.RowNumber());
+        }
+
+        var result = CoverageWorkbookReader.Load(templatePath);
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.Errors.Select(issue => issue.Message)));
+        Assert.NotNull(result.Dataset);
+        Assert.Empty(result.Dataset.Towers);
+        Assert.Empty(result.Dataset.FibreRanges);
+        Assert.Empty(result.Issues);
+    }
+
     private static string CreateWorkbook(string? omitFibreHeader = null)
     {
         var path = Path.Combine(Path.GetTempPath(), $"ssc-{Guid.NewGuid():N}.xlsx");
@@ -119,4 +154,9 @@ public sealed class WorkbookProbeTests
             }
         }
     }
+
+    private static IReadOnlyList<string> ReadHeaders(IXLWorksheet worksheet, int columnCount) =>
+        Enumerable.Range(1, columnCount)
+            .Select(column => worksheet.Cell(1, column).GetString())
+            .ToArray();
 }

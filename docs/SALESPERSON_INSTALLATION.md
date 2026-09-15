@@ -6,9 +6,9 @@
 - Internet access during installation and whenever using Google Maps features.
 - The `StarlingServiceChecker-Setup-<version>.exe` downloaded from the official public [Starling Service Checker Releases](https://github.com/coolool/StarlingServiceChecker-Releases/releases/latest) page.
 - Your company's restricted Google Maps Platform browser API key.
-- The approved two-tab coverage workbook.
+- The approved two-tab coverage workbook, or the blank `StarlingServiceChecker-Coverage-Template.xlsx` available on the same release page.
 
-You do not need administrator access, Microsoft Excel, .NET, Git, a database, or developer tools.
+You do not need administrator access, Microsoft Excel, .NET, Git, a database, or developer tools to install or run the application. Excel or another compatible spreadsheet editor is needed only when creating or changing a coverage workbook.
 
 ## Install
 
@@ -19,6 +19,17 @@ You do not need administrator access, Microsoft Excel, .NET, Git, a database, or
 5. Launch **Starling Service Checker**.
 
 If WebView2 cannot be installed, reconnect to the internet and rerun setup. If a company policy blocks it, contact IT rather than downloading software from an unapproved third-party site.
+
+## Blank coverage template
+
+The official release page includes a blank workbook with the exact two-tab format accepted by Starling Service Checker. It contains no sample coverage or company data.
+
+1. Download `StarlingServiceChecker-Coverage-Template.xlsx` from the same release as the installer.
+2. Keep the worksheet names and header row unchanged.
+3. Enter one tower or fibre range per row, beginning on row 2.
+4. Save the completed workbook with a company-specific filename, then select it in the application.
+
+On `Tower Coverage`, enter tower height in feet, published range in kilometres, speeds in Mbps, AP direction and coverage in degrees, and latitude/longitude as decimal degrees. AP direction may be blank only for a 360-degree AP. On `Fibre Coverage`, enter the inclusive starting and ending civic numbers; use `*` for an open-ended range.
 
 ## First use
 

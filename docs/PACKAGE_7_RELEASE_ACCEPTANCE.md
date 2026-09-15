@@ -7,6 +7,7 @@
 - Download repository: public, binary-only `coolool/StarlingServiceChecker-Releases`.
 - Installer: self-contained Windows x64, per-user, intentionally unsigned.
 - Update behavior: manual **Check for updates** link to the public latest-release page; no background updater.
+- Workbook starter: each release includes the data-free `StarlingServiceChecker-Coverage-Template.xlsx` with the exact two-tab schema.
 - Publication gate: the release stays draft until this matrix is complete and the owner explicitly approves publication.
 
 ## Evidence already accepted
@@ -35,6 +36,7 @@ These steps must use the exact assets produced from the annotated `v1.0.0` tag o
 - [x] Confirm an unauthenticated browser can reach the public repository while the draft URL returns `404` and the public latest-release page contains no installer.
 - [x] Owner downloads and successfully runs the exact draft installer on the test laptop (September 15, 2026; reported as working flawlessly).
 - [x] GitHub pull-request run `34971661676` passes all 96 application tests, both synthetic visual baselines, installer construction, artifact verification, and lifecycle checks in 3 minutes 39 seconds.
+- [x] Add a reviewed blank coverage workbook with exactly the required two tabs and headers, no data rows, and SHA-256 `50f5c1a7f7e504683fbb44907661e1dc3eb02420314a7c45d38395fd7480f73e` to the public download repository and draft release.
 - [ ] Merge the completed, owner-approved Package 7 acceptance record into `main`.
 
 ## Acceptance matrix
@@ -54,7 +56,7 @@ Use synthetic data for destructive/error cases and the supplied workbook only ou
 | Desktop layout | 1366×768, 1920×1080, Windows display scaling, keyboard navigation, and visible focus | Automated synthetic screenshots and layout/overflow/keyboard-focus assertions pass at 1366×768 and 1920×1080; prior owner visual review accepted |
 | Windows 10 clean install | No Excel, separate .NET, Git, or developer tools; observe unsigned warning, install, launch, upgrade, uninstall, and local-data choice | Exact tagged candidate installed, remained running for a bounded 12-second startup smoke test, upgraded over itself, and uninstalled; interactive warning and workflow checks pending |
 | Windows 11 clean install | Same checks on Windows 11 x64 | Owner reports the exact draft installer downloaded and worked flawlessly on the test laptop; Windows edition/version/build and detailed checklist notes were not recorded |
-| Public download | Non-developer can download from the official public link without GitHub sign-in and follow safe SmartScreen instructions | Pending published-candidate rehearsal |
+| Public download | Non-developer can download the installer and blank workbook template from the official public link without GitHub sign-in and follow safe SmartScreen instructions | Pending published-candidate rehearsal |
 | Privacy boundary | Release assets and installed application contain no key, real workbook, customer data, database, backend, logs, telemetry, fibre overlay, or regulatory layer | Automated scan passed; repeat on final assets |
 
 ## Windows 11 laptop checklist
@@ -62,7 +64,7 @@ Use synthetic data for destructive/error cases and the supplied workbook only ou
 Use the exact `v1.0.0` draft asset while signed into the owner GitHub account. Do not copy the Google key, workbook, searched address, or customer coordinates into GitHub, screenshots, or this record.
 
 1. Record the Windows edition, version, and OS build from **Settings → System → About**.
-2. Download all three draft assets from `coolool/StarlingServiceChecker-Releases`: the installer, checksum, and release manifest.
+2. Download all four draft assets from `coolool/StarlingServiceChecker-Releases`: the installer, checksum, release manifest, and blank coverage workbook template.
 3. In PowerShell, run `Get-FileHash .\StarlingServiceChecker-Setup-1.0.0.exe -Algorithm SHA256` and confirm `cbdb2a3f5f036177cb827d70e8b4557ceb8e4c6a3cb38d5ced03f1d296f8767f`.
 4. Run the installer. Record the exact SmartScreen or **Unknown publisher** experience; use **More info → Run anyway** only if company policy permits it, and do not disable security controls.
 5. Confirm setup completes without administrator credentials and the Start menu shortcut and application icon appear.
@@ -79,6 +81,6 @@ Record pass/fail plus short non-sensitive notes for each step. Screenshots are u
 Do not publish the draft until:
 
 - all remaining rows above have evidence or the owner explicitly approves a documented revised evidence plan;
-- the final installer, checksum, and manifest match each other;
+- the final installer, checksum, manifest, and blank coverage workbook match their verified release inputs;
 - the release notes clearly state that the installer is unsigned;
 - the owner confirms the release candidate is approved for public download.

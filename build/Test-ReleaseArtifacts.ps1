@@ -9,6 +9,8 @@ param(
     [string]$ExpectedSourceRepository,
     [ValidatePattern('^[0-9A-Fa-f]{40}$')]
     [string]$ExpectedSourceCommit,
+    [ValidatePattern('^[0-9A-Fa-f]{64}$')]
+    [string]$ExpectedCoverageTemplateSha256,
     [switch]$RequireGitHubReleasesUpdateLocation
 )
 
@@ -39,11 +41,23 @@ $manifestName = "StarlingServiceChecker-$Version-release.json"
 $installerPath = Join-Path $artifactPath $installerName
 $checksumPath = Join-Path $artifactPath $checksumName
 $manifestPath = Join-Path $artifactPath $manifestName
+$coverageTemplateName = 'StarlingServiceChecker-Coverage-Template.xlsx'
+$coverageTemplatePath = Join-Path $artifactPath $coverageTemplateName
 
 foreach ($requiredPath in @($installerPath, $checksumPath, $manifestPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
         throw "Required release artifact is missing: $requiredPath"
     }
+}
+
+$coverageTemplateHash = $null
+if (-not [string]::IsNullOrWhiteSpace($ExpectedCoverageTemplateSha256)) {
+    if (-not (Test-Path -LiteralPath $coverageTemplatePath -PathType Leaf)) {
+        throw "Required blank coverage template is missing: $coverageTemplatePath"
+    }
+
+    $coverageTemplateHash = (Get-FileHash -LiteralPath $coverageTemplatePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    Assert-Equal $coverageTemplateHash $ExpectedCoverageTemplateSha256.ToLowerInvariant() 'Coverage template SHA-256'
 }
 
 try {
@@ -127,4 +141,6 @@ if ($hasSignature -or $signature.Status -ne [Management.Automation.SignatureStat
     UpdateLocation = [string]$manifest.updateLocation
     SourceRepository = [string]$manifest.sourceRepository
     SourceCommit = [string]$manifest.sourceCommit
+    CoverageTemplate = if ($null -ne $coverageTemplateHash) { $coverageTemplatePath } else { $null }
+    CoverageTemplateSha256 = $coverageTemplateHash
 }
