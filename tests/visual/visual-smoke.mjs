@@ -198,7 +198,80 @@ async function renderScenario(page, width, height) {
   const screenshotPath = path.join(outputDirectory, `starling-${width}x${height}.png`);
   const screenshot = await page.screenshot({ path: screenshotPath, fullPage: false });
   assert.ok(screenshot.length > 40_000, "Visual smoke screenshot is unexpectedly small or blank.");
+
+  await page.locator("#profile-minimize").click();
+  const minimizedProfile = await page.evaluate(() => {
+    const profile = document.querySelector("#profile-card");
+    const bounds = profile.getBoundingClientRect();
+    return {
+      minimized: profile.classList.contains("minimized"),
+      height: bounds.height,
+      bottom: bounds.bottom,
+      label: document.querySelector("#profile-minimize").getAttribute("aria-label"),
+    };
+  });
+  assert.equal(minimizedProfile.minimized, true);
+  assert.equal(minimizedProfile.label, "Restore terrain profile");
+  assert.ok(minimizedProfile.height <= 90 && minimizedProfile.bottom <= height, "Minimized profile must fit at the bottom of the map.");
+
+  await page.locator("#profile-minimize").click();
+  assert.equal(await page.locator("#profile-card").evaluate(element => element.classList.contains("minimized")), false);
+  assert.equal(await page.locator("#profile-minimize").getAttribute("aria-label"), "Minimize terrain profile");
+  await page.locator("#profile-close").click();
+  assert.equal(await page.locator("#profile-card").evaluate(element => element.hidden), true);
+
+  const fibreStates = [
+    ["available", "Available in workbook"],
+    ["notlisted", "Not listed"],
+    ["addressrequired", "Address required"],
+    ["dataerror", "Data error"],
+  ];
+  for (const [status, expectedHeading] of fibreStates) {
+    await page.evaluate(({ locationPayload, fibreStatus }) => {
+      globalThis.simpleServiceChecker.receive({
+        type: "locationResult",
+        payload: { ...locationPayload, fibre: { status: fibreStatus }, candidates: [] },
+      });
+    }, { locationPayload: locationResult, fibreStatus: status });
+    assert.equal(await page.locator("#fibre-result strong").textContent(), expectedHeading);
+    assert.equal(await page.locator("#candidate-count").textContent(), "0");
+    await expectText(page, "#candidate-list", "No towers include this location within their published range.");
+  }
+
+  await page.evaluate(locationPayload => {
+    globalThis.simpleServiceChecker.receive({
+      type: "locationResult",
+      payload: { ...locationPayload, candidates: [locationPayload.candidates[1]] },
+    });
+  }, locationResult);
+  assert.equal(await page.locator("#candidate-count").textContent(), "1");
+  await expectText(page, "#candidate-list", "1. River Demo Tower");
+
+  await page.evaluate(locationPayload => {
+    globalThis.simpleServiceChecker.receive({
+      type: "locationResult",
+      payload: { ...locationPayload, revision: 999, candidates: locationPayload.candidates },
+    });
+  }, locationResult);
+  assert.equal(await page.locator("#candidate-count").textContent(), "1", "A stale location result must not replace the active result.");
+
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.keyboard.press("Tab");
+  await page.locator("#settings-toggle").focus();
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "settings-toggle");
+  const focusStyle = await page.locator("#settings-toggle").evaluate(element => {
+    const style = getComputedStyle(element);
+    return { outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth };
+  });
+  assert.notEqual(focusStyle.outlineStyle, "none");
+  assert.notEqual(focusStyle.outlineWidth, "0px");
+
   return { screenshotPath, bytes: screenshot.length, layout };
+}
+
+async function expectText(page, selector, expected) {
+  const textContent = await page.locator(selector).textContent();
+  assert.ok(textContent?.includes(expected), `Expected ${selector} to contain "${expected}", received "${textContent}".`);
 }
 
 await mkdir(outputDirectory, { recursive: true });
@@ -224,6 +297,7 @@ try {
   for (const result of results) {
     console.log(`Visual smoke passed: ${path.relative(repositoryRoot, result.screenshotPath)} (${result.bytes} bytes, chart ${Math.round(result.layout.chart.width)}x${Math.round(result.layout.chart.height)}).`);
   }
+  console.log("Interaction smoke passed: fibre result states, zero/one/many candidate rendering, stale-result rejection, profile minimize/restore/close, and visible keyboard focus.");
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

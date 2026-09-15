@@ -45,13 +45,13 @@ Use synthetic data for destructive/error cases and the supplied workbook only ou
 | --- | --- | --- |
 | First run | Configure a company key and activate a valid workbook | Previously accepted; repeat on final candidate |
 | Returning user | Key and active workbook reload without setup | Previously accepted; repeat on final candidate |
-| Workbook lifecycle | Valid, invalid, replacement, restore, locked, and missing-source cases retain the last known-good data | Automated and Package 5 accepted; final smoke check pending |
+| Workbook lifecycle | Valid, invalid, replacement, restore, locked, and missing-source cases retain the last known-good data | Covered by application tests and accepted in Package 5 |
 | Location input | Places, coordinates, map click, and draggable pin update the same active customer location | Package 3 accepted; final smoke check pending |
-| Fibre result | Match, no match, address required, and data-error states are distinct | Automated and Package 3 accepted; final smoke check pending |
-| Wireless result | Zero, one, and many candidates are correctly ordered and labelled | Automated and Package 3 accepted; final smoke check pending |
-| Terrain/Fresnel | Representative short and long paths render clearance, legends, details, minimize, and restore | Automated and Package 4 accepted; final smoke check pending |
+| Fibre result | Match, no match, address required, and data-error states are distinct | Core matching tests plus browser assertions for all four rendered states pass; accepted in Package 3 |
+| Wireless result | Zero, one, and many candidates are correctly ordered and labelled | Core ordering/range tests plus browser assertions for zero, one, and three rendered candidates pass; accepted in Package 3 |
+| Terrain/Fresnel | Representative short and long paths render clearance, legends, details, minimize, and restore | Core analytical tests cover representative paths; browser assertions cover plot, legend, minimize, restore, and close at both desktop baselines; accepted in Package 4 |
 | Google provider states | Restricted key, quota/provider error, timeout, and offline states remain bounded and do not expose provider diagnostics | Automated/provider proof accepted; final smoke check pending |
-| Desktop layout | 1366×768, 1920×1080, Windows display scaling, keyboard navigation, and visible focus | Automated synthetic screenshots pass at 1366×768 and 1920×1080; prior owner visual review accepted |
+| Desktop layout | 1366×768, 1920×1080, Windows display scaling, keyboard navigation, and visible focus | Automated synthetic screenshots and layout/overflow/keyboard-focus assertions pass at 1366×768 and 1920×1080; prior owner visual review accepted |
 | Windows 10 clean install | No Excel, separate .NET, Git, or developer tools; observe unsigned warning, install, launch, upgrade, uninstall, and local-data choice | Exact tagged candidate installed, remained running for a bounded 12-second startup smoke test, upgraded over itself, and uninstalled; interactive warning and workflow checks pending |
 | Windows 11 clean install | Same checks on Windows 11 x64 | Owner reports the exact draft installer downloaded and worked flawlessly on the test laptop; Windows edition/version/build and detailed checklist notes were not recorded |
 | Public download | Non-developer can download from the official public link without GitHub sign-in and follow safe SmartScreen instructions | Pending published-candidate rehearsal |
