@@ -1,0 +1,15 @@
+{
+  "name": "starling-service-checker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Development-only visual smoke tests for the Starling Service Checker desktop UI.",
+  "scripts": {
+    "test:visual": "node tests/visual/visual-smoke.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

@@ -27,6 +27,14 @@ dotnet build SimpleServiceChecker.sln --configuration Release --no-restore
 dotnet test SimpleServiceChecker.sln --configuration Release --no-build
 ```
 
+The development-only visual smoke check uses Node.js 24 and the installed Microsoft Edge browser. It renders synthetic application data at both supported desktop baselines and writes ignored proof images under `output/playwright`:
+
+```powershell
+$env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1'
+npm ci
+npm run test:visual
+```
+
 Create the unsigned, self-contained Windows application build with:
 
 ```powershell
@@ -44,6 +52,7 @@ The application does not require Excel or a separately installed .NET runtime. T
 See [Package 4 terrain checklist](docs/PACKAGE_4_TERRAIN.md) for the accepted terrain and Fresnel implementation.
 See [Package 5 spreadsheet-management checklist](docs/PACKAGE_5_SPREADSHEET_MANAGEMENT.md) for the current review build and recovery evidence.
 See [Package 6 installer and release checklist](docs/PACKAGE_6_INSTALLER_RELEASE.md) and the [salesperson installation guide](docs/SALESPERSON_INSTALLATION.md).
+See [Package 7 release-candidate acceptance](docs/PACKAGE_7_RELEASE_ACCEPTANCE.md) for final-candidate evidence and publication gates.
 
 ## Repository safety
 

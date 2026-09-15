@@ -37,6 +37,8 @@ TestResults/
 local-data/
 logs/
 *.log
+node_modules/
+output/playwright/
 
 # OS files
 Thumbs.db

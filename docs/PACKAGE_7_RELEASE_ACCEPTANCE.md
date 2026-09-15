@@ -32,7 +32,7 @@ These steps must use the exact assets produced from the annotated `v1.0.0` tag o
 - [x] Confirm the workflow creates a draft—not a published release—in the public repository.
 - [x] Record the draft installer SHA-256 as `cbdb2a3f5f036177cb827d70e8b4557ceb8e4c6a3cb38d5ced03f1d296f8767f` and source commit as `ad13a60fea8cb8b56e0d905c229c2ea4948cff6a`.
 - [x] Confirm an unauthenticated browser can reach the public repository while the draft URL returns `404` and the public latest-release page contains no installer.
-- [ ] Complete laptop acceptance using the exact draft installer.
+- [x] Owner downloads and successfully runs the exact draft installer on the test laptop (September 15, 2026; reported as working flawlessly).
 - [ ] Merge the completed, owner-approved Package 7 acceptance record into `main`.
 
 ## Acceptance matrix
@@ -49,9 +49,9 @@ Use synthetic data for destructive/error cases and the supplied workbook only ou
 | Wireless result | Zero, one, and many candidates are correctly ordered and labelled | Automated and Package 3 accepted; final smoke check pending |
 | Terrain/Fresnel | Representative short and long paths render clearance, legends, details, minimize, and restore | Automated and Package 4 accepted; final smoke check pending |
 | Google provider states | Restricted key, quota/provider error, timeout, and offline states remain bounded and do not expose provider diagnostics | Automated/provider proof accepted; final smoke check pending |
-| Desktop layout | 1366×768, 1920×1080, Windows display scaling, keyboard navigation, and visible focus | Prior visual review accepted; final candidate checks pending |
+| Desktop layout | 1366×768, 1920×1080, Windows display scaling, keyboard navigation, and visible focus | Automated synthetic screenshots pass at 1366×768 and 1920×1080; prior owner visual review accepted |
 | Windows 10 clean install | No Excel, separate .NET, Git, or developer tools; observe unsigned warning, install, launch, upgrade, uninstall, and local-data choice | Exact tagged candidate installed, remained running for a bounded 12-second startup smoke test, upgraded over itself, and uninstalled; interactive warning and workflow checks pending |
-| Windows 11 clean install | Same checks on Windows 11 x64 | Pending external machine or approved revised evidence plan |
+| Windows 11 clean install | Same checks on Windows 11 x64 | Owner reports the exact draft installer downloaded and worked flawlessly on the test laptop; Windows edition/version/build and detailed checklist notes were not recorded |
 | Public download | Non-developer can download from the official public link without GitHub sign-in and follow safe SmartScreen instructions | Pending published-candidate rehearsal |
 | Privacy boundary | Release assets and installed application contain no key, real workbook, customer data, database, backend, logs, telemetry, fibre overlay, or regulatory layer | Automated scan passed; repeat on final assets |
 
