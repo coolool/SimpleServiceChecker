@@ -191,7 +191,7 @@ Package 2 remains the accepted map-independent domain layer. Package 3 now conne
 - Public unsigned draft-release workflow run `34968324929` passed build, all 96 tests, lifecycle installation, artifact verification, and draft upload in 3 minutes 16 seconds.
 - The exact draft installer has verified SHA-256 `cbdb2a3f5f036177cb827d70e8b4557ceb8e4c6a3cb38d5ced03f1d296f8767f`, matches its manifest and source provenance, is unsigned, and independently passed install, a bounded 12-second application-startup smoke test, same-version upgrade, and uninstall on Windows 10.
 - Anonymous access reaches the public repository, while the unpublished draft URL returns `404` and the public latest-release page exposes no installer.
-- Automated Playwright visual smoke tests use only synthetic data and the packaged application assets, pass at 1366×768 and 1920×1080, and publish the two screenshots as a private CI proof artifact.
+- Automated Playwright visual smoke tests use only synthetic data and the packaged application assets. Pull-request run `34971661676` passed both 1366×768 and 1920×1080 baselines and published the two screenshots as a private CI proof artifact.
 - The owner reports that the exact draft installer downloaded and worked flawlessly on the test laptop on September 15, 2026. Windows edition/version/build and detailed checklist notes were not recorded.
 - Explicit owner publication approval remains open. The release is still a draft.
 

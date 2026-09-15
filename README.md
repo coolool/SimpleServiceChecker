@@ -4,7 +4,7 @@ Starling Service Checker is a low-maintenance Windows desktop application for sa
 
 ## Status
 
-Packages 1 through 5 and the map, Street View, Geocoding, legend, icon, branding, and terrain-minimize follow-ups are accepted. Package 6 uses an intentionally unsigned installer published through the separate public binary-only `coolool/StarlingServiceChecker-Releases` repository. Clean-machine testing and owner acceptance remain open.
+Packages 1 through 6 and the map, Street View, Geocoding, legend, icon, branding, and terrain-minimize follow-ups are accepted. The exact `v1.0.0` draft installer has passed automated Windows lifecycle checks and an owner laptop smoke test. It remains unpublished in the separate public binary-only `coolool/StarlingServiceChecker-Releases` repository pending the final publication gate.
 
 ## Product boundaries
 

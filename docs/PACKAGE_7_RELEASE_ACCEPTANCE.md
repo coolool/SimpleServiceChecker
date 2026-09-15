@@ -19,6 +19,7 @@
 | Windows 10 installer lifecycle | Exact CI installer installed, upgraded over itself, and uninstalled under a normal Windows 10 Home 22H2 user token | Passed |
 | Release artifact integrity | SHA-256, executable version, manifest, public update URL, private source provenance, and unsigned state independently matched | Passed |
 | Public repository boundary | Repository is public, contains only its safety/download README, and has Issues and Wiki disabled | Passed |
+| Desktop visual regression | GitHub run `34971661676` rendered and uploaded synthetic 1366×768 and 1920×1080 screenshots after all layout assertions passed | Passed |
 
 The final Package 6 proof installer SHA-256 is `6a9322ab31e4640ff3dcb38531122a6edfaf8bbd6117be8f92527d17dd0130a2`. It is evidence for the build path, not the final tagged release candidate.
 
@@ -33,6 +34,7 @@ These steps must use the exact assets produced from the annotated `v1.0.0` tag o
 - [x] Record the draft installer SHA-256 as `cbdb2a3f5f036177cb827d70e8b4557ceb8e4c6a3cb38d5ced03f1d296f8767f` and source commit as `ad13a60fea8cb8b56e0d905c229c2ea4948cff6a`.
 - [x] Confirm an unauthenticated browser can reach the public repository while the draft URL returns `404` and the public latest-release page contains no installer.
 - [x] Owner downloads and successfully runs the exact draft installer on the test laptop (September 15, 2026; reported as working flawlessly).
+- [x] GitHub pull-request run `34971661676` passes all 96 application tests, both synthetic visual baselines, installer construction, artifact verification, and lifecycle checks in 3 minutes 39 seconds.
 - [ ] Merge the completed, owner-approved Package 7 acceptance record into `main`.
 
 ## Acceptance matrix
